@@ -70,6 +70,48 @@ Backend trong `functions/` tự tính tiền, giữ ghế theo phim/rạp/ngày/
 
 6. Build lại APK sau khi backend đã deploy. Terminal ID được cấu hình là `GW923J6D`; Hash Secret chỉ nằm trong Secret Manager.
 
+## Chạy backend trên máy và nhận IPN qua tunnel (không cần Blaze)
+
+Nếu không muốn liên kết Cloud Billing, có thể chạy chính backend Functions ở chế độ Emulator trên máy tính rồi đưa cổng local ra Internet bằng HTTPS tunnel, giống cách backend BusBooking được expose. Dữ liệu đơn, ghế và vé vẫn lưu trong Realtime Database Firebase; không dùng MySQL. Cách này không deploy Functions lên Firebase và máy tính phải luôn bật khi thử thanh toán.
+
+1. Tạo Realtime Database trên Spark và triển khai `database.rules.json` theo phần Firebase phía trên. Không khởi động Database Emulator hoặc Auth Emulator trong luồng này: Functions Emulator sẽ dùng Realtime Database và Authentication thật của project.
+2. Đăng nhập Firebase CLI. Vì backend local dùng Firebase Admin SDK để xác minh token và ghi dữ liệu cloud, hãy cài Google Cloud CLI rồi đăng nhập Application Default Credentials bằng tài khoản có quyền quản trị project:
+
+   ```powershell
+   npx firebase-tools login
+   gcloud auth application-default login
+   ```
+
+3. Tạo `functions/.secret.local` (đã được Git ignore) với hai dòng `VNPAY_HASH_SECRET=...` và `ADMIN_BOOTSTRAP_CODE=...`. Nhập Hash Secret đã được cung cấp vào file này; tạo bootstrap code ngẫu nhiên, giữ riêng. Không gửi, commit hoặc chép các giá trị này vào APK.
+4. Mở một terminal để chạy HTTPS tunnel tới cổng Functions Emulator:
+
+   ```powershell
+   cloudflared tunnel --url http://127.0.0.1:5001
+   ```
+
+   Hoặc dùng `ngrok http 5001`. Giữ tunnel chạy và lấy origin HTTPS được cấp, ví dụ `https://abc.ngrok-free.app`.
+5. Từ thư mục `DOAN`, mở backend với origin của tunnel:
+
+   ```powershell
+   .\functions\start-spark-vnpay.ps1 -TunnelOrigin "https://abc.ngrok-free.app"
+   ```
+
+   Script chạy Functions Emulator cho project thật, chỉ bật emulator cho backend và tự tạo địa chỉ API/IPN đầy đủ. Lệnh không deploy Functions và không yêu cầu nâng Firebase lên Blaze.
+6. Build app trỏ cùng API base URL. Thay URL bằng origin HTTPS tunnel của bạn:
+
+   ```powershell
+   $api = "https://abc.ngrok-free.app/tttt-cinema-20261020/asia-southeast1/vnpayApi"
+   .\gradlew.bat installDebug "-PVNPAY_API_BASE_URL=$api"
+   ```
+
+7. Trong VNPAY Sandbox Merchant Admin, đặt IPN URL thành API base URL cộng với `/api/payments/vnpay/ipn`, ví dụ:
+
+   ```text
+   https://abc.ngrok-free.app/tttt-cinema-20261020/asia-southeast1/vnpayApi/api/payments/vnpay/ipn
+   ```
+
+Tunnel thường đổi URL khi khởi động lại. Khi URL đổi, hãy cập nhật địa chỉ ở script, build app và cấu hình IPN trên VNPAY. VNPAY cần gọi được IPN qua HTTPS; địa chỉ LAN hoặc `localhost` không nhận được callback từ máy chủ VNPAY. Chỉ dùng cách này để phát triển/Sandbox, không xem máy cá nhân là backend vận hành liên tục.
+
 ### Thẻ VNPAY Sandbox
 
 Theo [tài liệu chính thức VNPAY Sandbox](https://sandbox.vnpayment.vn/apis/docs/gioi-thieu/) và [trang demo VNPAY](https://sandbox.vnpayment.vn/apis/vnpay-demo/):
@@ -114,6 +156,6 @@ Chỉ dùng thông tin thẻ test này trong Sandbox.
 
 - Project Firebase mới và Android app đã tạo; file Android config đã đổi sang project mới.
 - Email/password Auth được bật qua cấu hình CLI nếu lệnh deploy Auth hoàn tất.
-- Database và Functions production chưa được xem là hoạt động cho đến khi tạo được Realtime Database, nhập secrets, bật billing nếu Firebase yêu cầu, deploy Functions, và đăng ký IPN URL trên Merchant Admin.
+- Cloud Functions production chưa deploy vì Firebase Spark không cho deploy Functions. Có thể chạy backend qua Functions Emulator + HTTPS tunnel theo hướng dẫn trên; cần tạo Realtime Database, thiết lập Application Default Credentials, lưu secrets local, và đăng ký IPN URL Sandbox.
 - Danh mục phim, rạp và suất chiếu hiện là dữ liệu mẫu trong app; cần thay bằng lịch chiếu thật của rạp trước khi vận hành.
-- Build/test xác minh mã nguồn cục bộ; không chứng minh giao dịch VNPAY end-to-end khi backend/callback production chưa deploy.
+- Build/test cục bộ không tự xác minh giao dịch VNPAY end-to-end. Chỉ xác nhận thanh toán Sandbox khi tunnel công khai hoạt động, VNPAY gọi được IPN và app nhận trạng thái đã xác minh.
