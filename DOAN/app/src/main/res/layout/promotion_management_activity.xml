@@ -1,0 +1,80 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F5F5F5"
+    android:padding="16dp">
+
+    <!-- Tiêu đề -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Quản Lý Khuyến Mãi"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_gravity="center"
+        android:paddingBottom="24dp"/>
+
+    <!-- Ô nhập Tiêu đề -->
+    <EditText
+        android:id="@+id/edtPromotionTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nhập tiêu đề khuyến mãi"
+        android:background="@android:color/white"
+        android:padding="12dp"
+        android:elevation="4dp"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- Ô nhập Thời gian khuyến mãi -->
+    <EditText
+        android:id="@+id/edtPromotionDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nhập thời gian khuyến mãi"
+        android:background="@android:color/white"
+        android:padding="12dp"
+        android:elevation="4dp"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- Ô nhập Địa điểm -->
+    <EditText
+        android:id="@+id/edtPromotionLocation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nhập địa điểm"
+        android:background="@android:color/white"
+        android:padding="12dp"
+        android:elevation="4dp"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- Ô nhập Link Hình ảnh -->
+    <EditText
+        android:id="@+id/edtPromotionImage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nhập link hình ảnh"
+        android:background="@android:color/white"
+        android:padding="12dp"
+        android:elevation="4dp"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- Nút Cập Nhật -->
+    <Button
+        android:id="@+id/btnUpdatePromotion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Cập Nhật"
+        android:backgroundTint="@android:color/holo_blue_dark"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Danh sách khuyến mãi (RecyclerView) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewPromotions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:elevation="4dp"/>
+</LinearLayout>

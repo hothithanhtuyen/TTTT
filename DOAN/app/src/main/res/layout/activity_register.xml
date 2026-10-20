@@ -1,0 +1,151 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Ảnh nền -->
+    <ImageView
+        android:id="@+id/backgroundImage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/your_background_image"
+        android:contentDescription="@string/background_desc"
+        android:alpha="0.9" />
+
+    <!-- Nội dung giao diện -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <EditText
+                android:id="@+id/nameEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:hint="@string/hint_name"
+                android:inputType="textPersonName"
+                android:textColorHint="@android:color/white"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/white"
+                android:layout_marginBottom="16dp" />
+
+            <EditText
+                android:id="@+id/emailEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:hint="@string/hint_email"
+                android:inputType="textEmailAddress"
+                android:textColorHint="@android:color/white"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/white"
+                android:layout_marginBottom="16dp" />
+
+            <EditText
+                android:id="@+id/passwordEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:hint="@string/hint_password"
+                android:inputType="textPassword"
+                android:textColorHint="@android:color/white"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/white"
+                android:layout_marginBottom="16dp" />
+
+            <EditText
+                android:id="@+id/confirmPasswordEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:hint="@string/hint_confirm_password"
+                android:inputType="textPassword"
+                android:textColorHint="@android:color/white"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/white"
+                android:layout_marginBottom="16dp" />
+
+            <EditText
+                android:id="@+id/birthDateEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:hint="@string/hint_birthdate"
+                android:inputType="date"
+                android:textColorHint="@android:color/white"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/white"
+                android:layout_marginBottom="16dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+
+                <CheckBox
+                    android:id="@+id/maleCheckBox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Nam"
+                    android:layout_marginEnd="16dp"
+                    android:textColor="@android:color/white"
+                    android:buttonTint="@android:color/white"/>
+
+                <CheckBox
+                    android:id="@+id/femaleCheckBox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Nữ"
+                    android:layout_marginEnd="16dp"
+                    android:textColor="@android:color/white"
+                    android:buttonTint="@android:color/white"/>
+
+                <CheckBox
+                    android:id="@+id/CheckBox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Khác"
+                    android:textColor="@android:color/white"
+                    android:buttonTint="@android:color/white"/>
+            </LinearLayout>
+
+            <Spinner
+                android:id="@+id/provinceSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:backgroundTint="@android:color/white"
+                android:minHeight="48dp"
+                android:background="@drawable/spinner_item_border_white" />
+
+
+            <Button
+            android:id="@+id/registerButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/register"
+            android:textColor="@android:color/white"
+            android:backgroundTint="@android:color/holo_red_dark"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/loginTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/already_have_account"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:layout_gravity="center"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+</ScrollView>
+    </FrameLayout>

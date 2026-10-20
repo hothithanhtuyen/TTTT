@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    android:background="@color/red"
+    android:layout_margin="10dp">
+
+    <ImageView
+        android:id="@+id/backgroundBlurImage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:background="@drawable/border_background"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
+        app:layout_constraintTop_toBottomOf="@id/bannerImage" />
+
+<LinearLayout
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+android:orientation="vertical"
+android:padding="10dp"
+android:gravity="center">
+
+
+<!-- Poster phim -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="195dp"
+        android:layout_height="240dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="3dp">
+
+        <ImageView
+            android:id="@+id/moviePoster"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/your_background_image" />
+    </androidx.cardview.widget.CardView>
+
+<!-- Tiêu đề phim -->
+<TextView
+    android:id="@+id/movieTitle"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text=""
+    android:textColor="@android:color/black"
+    android:textSize="18sp"
+    android:textStyle="bold"
+    android:paddingTop="8dp"/>
+
+<!-- Thông tin thời lượng, ngày chiếu -->
+<TextView
+    android:id="@+id/movieInfo"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text=""
+    android:textColor="@android:color/black"
+    android:textSize="14sp"
+    android:paddingTop="4dp"/>
+
+<!-- Nút Đặt vé -->
+    <Button
+        android:id="@+id/bookTicketButton"
+        android:layout_width="241dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="@color/red"
+        android:text="Đặt vé"
+        android:textSize="12sp"
+        android:textColor="@color/white" />
+</LinearLayout>
+    </androidx.cardview.widget.CardView>
+

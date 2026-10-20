@@ -1,0 +1,45 @@
+<resources>
+    <string name="app_name">DOAN</string>
+    <string name="personal_info">Thông tin cá nhân</string>
+    <string name="add_ticket">Add Ticket</string>
+    <string name="back_button">Trở lại</string>
+    <string name="lich5">19h00-21h00</string>
+
+    <string name="payment_title">Thanh toán an toàn</string>
+        <string name="momo_logo_desc">Ví MoMo</string>
+        <string name="payment_method">Phương Thức Thanh Toán</string>
+        <string name="change">THAY ĐỔI</string>
+        <string name="guest_name">Tên người đặt: Nguyễn Văn A</string>
+        <string name="email">Email: nguyenvana@example.com</string>
+        <string name="phone_number">Số điện thoại: 0123456789</string>
+        <string name="movie_title">Phim: Inception</string>
+        <string name="show_time">Suất chiếu: 26/08/2020 - 11:20</string>
+        <string name="cinema">Rạp: CGV Sư Vạn Hạnh</string>
+        <string name="room">Phòng chiếu: Cinema 4</string>
+        <string name="seats">Ghế: D10, D09</string>
+        <string name="ticket_price">Giá vé: 98.000đ</string>
+        <string name="transaction_fee">Phí giao dịch: 2.000đ</string>
+        <string name="total_amount">Tổng tiền: 100.000đ</string>
+        <string name="confirm">Xác nhận</string>
+        <string name="background_desc">Background image</string>
+        <string name="logo_desc">Logo Lotte Cinema</string>
+        <string name="login_title">Đăng Nhập</string>
+        <string name="email_hint">Nhập email của bạn</string>
+        <string name="password_hint">Nhập mật khẩu</string>
+        <string name="register_account">Đăng ký tài khoản</string>
+        <string name="forgot_password">Quên mật khẩu</string>
+        <string name="login_button">Đăng Nhập</string>
+        <string name="hint_name">Tên của bạn</string>
+        <string name="hint_email">Email</string>
+        <string name="hint_password">Mật khẩu</string>
+        <string name="hint_confirm_password">Xác nhận mật khẩu</string>
+        <string name="hint_birthdate">Ngày sinh (dd/MM/yyyy)</string>
+        <string name="gender_male">Nam</string>
+        <string name="gender_female">Nữ</string>
+        <string name="gender_other">Khác</string>
+        <string name="btn_register">Đăng ký</string>
+        <string name="login_prompt">Đã có tài khoản? Đăng nhập</string>
+        <string name="register">Đăng ký</string>
+        <string name="already_have_account">Đã có tài khoản? Đăng nhập</string>
+
+</resources>

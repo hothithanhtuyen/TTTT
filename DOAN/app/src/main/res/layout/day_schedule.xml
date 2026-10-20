@@ -1,0 +1,55 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingVertical="4dp">
+
+    <CheckBox
+        android:id="@+id/checkBoxDay"
+        android:layout_width="115dp"
+        android:layout_height="wrap_content"
+        android:text="Thứ ?"
+        android:textSize="14sp"/>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <CheckBox
+            android:id="@+id/checkBoxSlot1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1"
+            android:enabled="false"/>
+
+        <CheckBox
+            android:id="@+id/checkBoxSlot2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2"
+            android:enabled="false"/>
+
+        <CheckBox
+            android:id="@+id/checkBoxSlot3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="3"
+            android:enabled="false"/>
+
+        <CheckBox
+            android:id="@+id/checkBoxSlot4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="4"
+            android:enabled="false"/>
+
+        <CheckBox
+            android:id="@+id/checkBoxSlot5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="5"
+            android:enabled="false"/>
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:padding="16dp">
+
+    <!-- Tiêu đề -->
+    <ImageView
+        android:id="@+id/btnBack"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
+        android:background="@color/black"
+        android:src="@drawable/baseline_keyboard_backspace_24" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/payment_title"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="12dp" />
+
+    <!-- Nguồn tiền -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#B3AAAA"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:layout_marginBottom="8dp"> <!-- Thêm margin dưới -->
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/momo_logo_desc"
+            android:src="@drawable/momo_logo" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="@string/payment_method"
+            android:textSize="18sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="@string/change"
+            android:textColor="@color/blue"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <!-- Khung 1: Thông tin người đặt -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#B3AAAA"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:backgroundTint="#F0EFEF"
+        android:layout_marginBottom="8dp"> <!-- Thêm margin dưới -->
+
+        <TextView
+            android:id="@+id/txtMovieName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingVertical="4dp"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/txtEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingVertical="4dp"
+            android:text="@string/email"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/txtPhoneNumber"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingVertical="4dp"
+            android:text="@string/phone_number"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <!-- Khung 2: Thông tin phim -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:background="#B3AAAA"
+        android:backgroundTint="#F0EFEF"
+        android:layout_marginBottom="8dp"> <!-- Thêm margin dưới -->
+
+        <TextView
+            android:id="@+id/txtMovieTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/movie_title"
+            android:textSize="16sp"
+            android:paddingVertical="4dp" />
+
+        <TextView
+            android:id="@+id/txtShowTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/show_time"
+            android:textSize="16sp"
+            android:paddingVertical="4dp" />
+
+        <TextView
+            android:id="@+id/txtRoom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/room"
+            android:textSize="16sp"
+            android:paddingVertical="4dp" />
+
+        <TextView
+            android:id="@+id/txtCinema"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/cinema"
+            android:textSize="16sp"
+            android:paddingVertical="4dp" />
+
+        <TextView
+            android:id="@+id/txtSeats"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/seats"
+            android:textSize="16sp"
+            android:paddingVertical="4dp" />
+    </LinearLayout>
+
+    <!-- Khung 3: Giá vé và phí giao dịch -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:backgroundTint="#F0EFEF"
+        android:background="#B3AAAA">
+
+        <TextView
+            android:id="@+id/txtPrice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/ticket_price"
+            android:textSize="16sp"
+            android:paddingVertical="4dp" />
+
+        <TextView
+            android:id="@+id/txtTransactionFee"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/transaction_fee"
+            android:textSize="16sp"
+            android:paddingVertical="4dp" />
+    </LinearLayout>
+
+    <!-- Tổng tiền -->
+    <TextView
+        android:id="@+id/btnprice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="12dp"
+        android:text="@string/total_amount"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <!-- Nút xác nhận -->
+    <Button
+        android:id="@+id/btnConfirm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/confirm"
+        android:textSize="18sp"
+        android:textColor="@color/white"
+        android:background="#B3A"
+        android:layout_marginTop="16dp"
+        android:padding="12dp" />
+</LinearLayout>

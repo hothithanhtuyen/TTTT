@@ -1,0 +1,32 @@
+# Sensitive environment files
+.env
+*.env
+!.env.example
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Python build & cache
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+vnpay_response.html
+
+# Android & Gradle
+*.iml
+.gradle
+**/.gradle/
+local.properties
+.idea/
+**/.idea/
+build/
+**/build/
+.kotlin/
+**/.kotlin/
+*.apk
+

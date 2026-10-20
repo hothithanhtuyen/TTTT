@@ -1,0 +1,120 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:paddingTop="32dp"> <!-- Thêm paddingTop để căn lề trên -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/red"
+        android:padding="8dp">
+
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:src="@drawable/baseline_keyboard_backspace_24" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="Chọn Ghế"
+            android:textColor="@android:color/white"
+            android:textSize="24sp" />
+    </RelativeLayout>
+    <!-- Hiển thị tên rạp -->
+    <TextView
+        android:id="@+id/tvCinema"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Rạp:"
+        android:textSize="18sp"
+        android:paddingBottom="8dp"
+        android:layout_marginTop="16dp"/> <!-- Căn lề riêng cho tên rạp -->
+
+    <!-- Bố cục chứa ghế và màn hình -->
+    <LinearLayout
+        android:layout_width="380dp"
+        android:layout_height="460dp"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <!-- GridView ghế -->
+        <GridView
+            android:id="@+id/gridViewSeats"
+            android:layout_width="match_parent"
+            android:layout_height="336dp"
+            android:layout_marginBottom="16dp"
+            android:horizontalSpacing="8dp"
+            android:numColumns="5"
+            android:verticalSpacing="8dp" />
+
+        <!-- Chú thích ghế đã chọn và chưa chọn -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <!-- Ô màu đen (Ghế đã chọn) -->
+            <LinearLayout
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="8dp"
+                android:background="@android:color/black" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="24dp"
+                android:text="Ghế đã chọn"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+
+            <!-- Ô màu xám (Ghế chưa chọn) -->
+            <LinearLayout
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="8dp"
+                android:background="@android:color/darker_gray" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ghế chưa chọn"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <!-- Màn hình -->
+        <TextView
+            android:id="@+id/tvScreenDirection"
+            android:layout_width="333dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@android:color/darker_gray"
+            android:gravity="center"
+            android:text="MÀN HÌNH"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnConfirm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Xác nhận đặt vé"
+        android:textSize="18sp"
+        android:visibility="invisible" />
+
+    <!-- Nút xác nhận đặt vé (Luôn chiếm không gian, tránh layout bị đẩy) -->
+</LinearLayout>

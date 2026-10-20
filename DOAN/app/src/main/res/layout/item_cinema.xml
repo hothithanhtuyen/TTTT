@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <!-- Spinner cho tỉnh -->
+    <Spinner
+        android:id="@+id/cinemaLocation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <!-- Spinner cho rạp -->
+    <Spinner
+        android:id="@+id/spinnerCinema"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <!-- Chọn ngày chiếu -->
+    <TextView
+        android:id="@+id/showTimes"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Chọn Ngày Chiếu:" />
+
+    <!-- Các ô chọn ngày chiếu với ô tích cho thứ tự chiếu -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Chủ Nhật -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/checkBoxSunday"
+                android:layout_width="115dp"
+                android:layout_height="wrap_content"
+                android:text="Chủ Nhật" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <CheckBox android:id="@+id/checkBoxSlot1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" />
+                <CheckBox android:id="@+id/checkBoxSlot2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" />
+                <CheckBox android:id="@+id/checkBoxSlot3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" />
+                <CheckBox android:id="@+id/checkBoxSlot4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4" />
+                <CheckBox android:id="@+id/checkBoxSlot5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Thứ Hai -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/checkBoxMonday"
+                android:layout_width="115dp"
+                android:layout_height="wrap_content"
+                android:text="Thứ Hai" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <CheckBox android:id="@+id/checkBoxSlot6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" />
+                <CheckBox android:id="@+id/checkBoxSlot7" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" />
+                <CheckBox android:id="@+id/checkBoxSlot8" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" />
+                <CheckBox android:id="@+id/checkBoxSlot9" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4" />
+                <CheckBox android:id="@+id/checkBoxSlot10" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Thứ Ba -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/checkBoxTuesday"
+                android:layout_width="115dp"
+                android:layout_height="wrap_content"
+                android:text="Thứ Ba" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <CheckBox android:id="@+id/checkBoxSlot11" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" />
+                <CheckBox android:id="@+id/checkBoxSlot12" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" />
+                <CheckBox android:id="@+id/checkBoxSlot13" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" />
+                <CheckBox android:id="@+id/checkBoxSlot14" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4" />
+                <CheckBox android:id="@+id/checkBoxSlot15" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Thứ Tư -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/checkBoxWednesday"
+                android:layout_width="115dp"
+                android:layout_height="wrap_content"
+                android:text="Thứ Tư" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <CheckBox android:id="@+id/checkBoxSlot16" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" />
+                <CheckBox android:id="@+id/checkBoxSlot17" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" />
+                <CheckBox android:id="@+id/checkBoxSlot18" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" />
+                <CheckBox android:id="@+id/checkBoxSlot19" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4" />
+                <CheckBox android:id="@+id/checkBoxSlot20" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Thứ Năm -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/checkBoxThursday"
+                android:layout_width="115dp"
+                android:layout_height="wrap_content"
+                android:text="Thứ Năm" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <CheckBox android:id="@+id/checkBoxSlot21" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" />
+                <CheckBox android:id="@+id/checkBoxSlot22" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" />
+                <CheckBox android:id="@+id/checkBoxSlot23" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" />
+                <CheckBox android:id="@+id/checkBoxSlot24" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4" />
+                <CheckBox android:id="@+id/checkBoxSlot25" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Thứ Sáu -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/checkBoxFriday"
+                android:layout_width="115dp"
+                android:layout_height="wrap_content"
+                android:text="Thứ Sáu" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <CheckBox android:id="@+id/checkBoxSlot26" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" />
+                <CheckBox android:id="@+id/checkBoxSlot27" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" />
+                <CheckBox android:id="@+id/checkBoxSlot28" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" />
+                <CheckBox android:id="@+id/checkBoxSlot29" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4" />
+                <CheckBox android:id="@+id/checkBoxSlot30" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Thứ Bảy -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/checkBoxSaturday"
+                android:layout_width="115dp"
+                android:layout_height="wrap_content"
+                android:text="Thứ Bảy" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <CheckBox android:id="@+id/checkBoxSlot31" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" />
+                <CheckBox android:id="@+id/checkBoxSlot32" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" />
+                <CheckBox android:id="@+id/checkBoxSlot33" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" />
+                <CheckBox android:id="@+id/checkBoxSlot34" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4" />
+                <CheckBox android:id="@+id/checkBoxSlot35" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
