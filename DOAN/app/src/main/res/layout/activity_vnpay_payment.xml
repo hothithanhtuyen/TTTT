@@ -5,7 +5,6 @@
     android:background="#12141C"
     android:orientation="vertical">
 
-    <!-- Header Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -27,7 +26,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:text="Thanh Toán VNPAY Sandbox"
+            android:text="Thanh toán VNPAY Sandbox"
             android:textColor="@android:color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -41,13 +40,12 @@
             android:paddingTop="4dp"
             android:paddingEnd="8dp"
             android:paddingBottom="4dp"
-            android:text="Đang chờ..."
+            android:text="Đang tạo giao dịch"
             android:textColor="#FFFFFF"
             android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- Card Thông tin đơn hàng & thẻ test Sandbox -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -67,7 +65,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="💳 Thẻ Test VNPAY Sandbox (NCB)"
+                android:text="Thẻ thử nghiệm VNPAY Sandbox (NCB)"
                 android:textColor="#E5A93C"
                 android:textSize="14sp"
                 android:textStyle="bold" />
@@ -89,7 +87,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Đơn hàng: Phim - 42.000đ"
+            android:text="Đang tải thông tin giao dịch..."
             android:textColor="#FFFFFF"
             android:textSize="13sp" />
 
@@ -97,11 +95,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="• Ngân hàng: NCB  |  Ngày: 07/15\n• Số thẻ: 9704198526191432198\n• Tên: NGUYEN VAN A  |  OTP: 123456"
+            android:text="NCB: 9704198526191432198 · Tên: NGUYEN VAN A · OTP: 123456"
             android:textColor="#B0B5C6"
             android:textSize="11sp" />
 
-        <!-- Quick actions: Show QR / Open external -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -116,7 +113,8 @@
                 android:layout_marginEnd="6dp"
                 android:layout_weight="1"
                 android:backgroundTint="#2B3042"
-                android:text="Mã QR Mở VNPAY 📱"
+                android:enabled="false"
+                android:text="Mã QR thanh toán"
                 android:textColor="#E5A93C"
                 android:textSize="11sp"
                 android:textStyle="bold" />
@@ -128,13 +126,13 @@
                 android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 android:backgroundTint="#2B3042"
-                android:text="Mở Trình Duyệt 🌐"
+                android:enabled="false"
+                android:text="Mở trình duyệt"
                 android:textColor="#FFFFFF"
                 android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Loading ProgressBar -->
     <ProgressBar
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleHorizontal"
@@ -143,14 +141,12 @@
         android:indeterminate="true"
         android:visibility="gone" />
 
-    <!-- WebView VNPAY Sandbox -->
     <WebView
         android:id="@+id/webViewVnpay"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <!-- Bottom Action Panel -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -161,11 +157,11 @@
         android:padding="8dp">
 
         <Button
-            android:id="@+id/btnDemoSuccess"
+            android:id="@+id/btnRefreshStatus"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:backgroundTint="#4CAF50"
-            android:text="✓ Kiểm tra xác nhận thanh toán (Tự động)"
+            android:backgroundTint="#005BAA"
+            android:text="Kiểm tra trạng thái giao dịch"
             android:textColor="@android:color/white"
             android:textSize="13sp"
             android:textStyle="bold" />

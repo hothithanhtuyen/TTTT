@@ -242,5 +242,23 @@ Dự án sử dụng Google Firebase Realtime Database. Để hệ thống hoạ
 5. **An toàn kiểu dữ liệu Intent:** Thay thế các lệnh ép kiểu cưỡng bức `as String` bằng fallback an toàn `?: ""` tránh lỗi `NullPointerException`.
 6. **Bổ sung quyền Manifest:** Khai báo đầy đủ `<uses-permission android:name="android.permission.INTERNET" />` và `android:usesCleartextTraffic="true"` cho phép hiển thị ảnh từ các nguồn HTTP.
 7. **Kiểm thử tự động:** Mở rộng bộ Unit Test trong `ExampleUnitTest.kt` và đạt kết quả kiểm thử **PASS 100% (BUILD SUCCESSFUL)**.
-8. **Tích hợp Cổng thanh toán VNPAY Sandbox:** Thêm màn hình [`VNPayPaymentActivity`](file:///C:/Users/admin/Downloads/DOAN%20%285%29/DOAN/app/src/main/java/com/example/doan/ui/user/VNPayPaymentActivity.kt) tích hợp Cổng thanh toán VNPAY Sandbox qua thẻ thử nghiệm NCB (`9704198526191432198` / `NGUYEN VAN A` / OTP: `123456`), tự động nạp đơn hàng, hỗ trợ sao chép số thẻ nhanh và xác nhận thanh toán trực tuyến.
+8. **Tích hợp VNPAY Sandbox:** Ứng dụng gọi Firebase Cloud Functions để ký URL, tạo QR thanh toán, nhận IPN và phát hành vé sau khi xác minh callback.
 9. **Khắc phục triệt để luồng đặt vé:** Căn chỉnh đồng bộ mã ca chiếu (`1..5`), tự động nhận diện ngày hiện tại và kích hoạt suất chiếu tương ứng trên toàn bộ 8 cụm rạp.
+
+
+## VNPay Sandbox và mã QR
+
+Luồng VNPAY sử dụng Firebase Cloud Functions làm máy chủ ký URL và nhận IPN/callback. Khóa bí mật không nằm trong APK. Máy chủ tự tính tiền theo quy tắc hiện tại của ứng dụng: 20.000đ mỗi ghế cộng 2.000đ phí đặt; vé chỉ được ghi vào Firebase sau khi chữ ký, mã đơn, số tiền và trạng thái giao dịch do VNPAY gửi đã được xác minh. Ứng dụng tạo QR từ URL VNPAY đã ký và truy vấn trạng thái đơn.
+
+### Cấu hình và triển khai
+
+1. Cài Firebase CLI, đăng nhập vào tài khoản có quyền với project doan-ecdfa và cài Node.js 22.
+2. Tại thư mục gốc dự án, chạy npm install trong thư mục functions.
+3. Tạo secret bằng lệnh firebase functions:secrets:set VNPAY_HASH_SECRET rồi nhập Hash Secret tại dấu nhắc của CLI. Không ghi secret vào file .env, Gradle, Android hay kho mã.
+4. Triển khai bằng firebase deploy --only functions:vnpayApi. Firebase Functions cần project dùng gói Blaze và liên kết Cloud Billing; việc triển khai chưa được thực hiện từ thay đổi mã nguồn này.
+5. Android mặc định gọi https://asia-southeast1-doan-ecdfa.cloudfunctions.net/vnpayApi. Để dùng Functions Emulator, đặt thuộc tính Gradle VNPAY_API_BASE_URL thành http://10.0.2.2:5001/doan-ecdfa/asia-southeast1/vnpayApi khi chạy trên Android Emulator.
+6. Trong cấu hình website VNPAY, đăng ký IPN URL https://asia-southeast1-doan-ecdfa.cloudfunctions.net/vnpayApi/api/payments/vnpay/ipn. Return URL được tạo tự động với đuôi /api/payments/vnpay/return.
+
+Mã website đang cấu hình là GW923J6D; Hash Secret được nhập riêng vào Secret Manager. Dữ liệu đơn và trạng thái cuối được ký ở backend để ứng dụng chỉ chấp nhận trạng thái thanh toán do server xác nhận.
+
+Tài liệu VNPAY 2.1.0: https://sandbox.vnpayment.vn/apis/docs/thanh-toan-pay/pay.html. Hướng dẫn Firebase Secret Manager: https://firebase.google.com/docs/functions/config-env.

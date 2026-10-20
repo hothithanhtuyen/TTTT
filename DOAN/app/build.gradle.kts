@@ -4,8 +4,11 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-android {
+val vnpayApiBaseUrl = providers.gradleProperty("VNPAY_API_BASE_URL")
+    .orElse("https://asia-southeast1-doan-ecdfa.cloudfunctions.net/vnpayApi")
+    .get()
 
+android {
     namespace = "com.example.doan"
     compileSdk = 35
 
@@ -15,8 +18,11 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-
+        buildConfigField("String", "VNPAY_API_BASE_URL", "\"$vnpayApiBaseUrl\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+    buildFeatures {
+        buildConfig = true
     }
     packaging {
         resources {
@@ -62,7 +68,4 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
 }
-
-

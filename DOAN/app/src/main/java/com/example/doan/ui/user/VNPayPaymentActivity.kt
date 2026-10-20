@@ -15,21 +15,29 @@ import android.view.View
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.*
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.example.doan.BuildConfig
 import com.example.doan.R
-import com.example.doan.model.TicketOrder
-import com.example.doan.utils.Constants
-import com.example.doan.utils.GMailSender
 import com.example.doan.utils.QRCodeUtils
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
+import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 class VNPayPaymentActivity : AppCompatActivity() {
 
@@ -38,140 +46,186 @@ class VNPayPaymentActivity : AppCompatActivity() {
     private lateinit var btnCopyCard: Button
     private lateinit var btnShowVNPayQR: Button
     private lateinit var btnOpenBrowser: Button
-    private lateinit var btnDemoSuccess: Button
+    private lateinit var btnRefreshStatus: Button
     private lateinit var btnBack: ImageView
     private lateinit var txtOrderSummary: TextView
     private lateinit var txtStatusBadge: TextView
-    private lateinit var databaseTicker: DatabaseReference
+
+    private val httpClient = OkHttpClient.Builder().callTimeout(20, TimeUnit.SECONDS).build()
+    private val handler = Handler(Looper.getMainLooper())
+    private val apiBaseUrl = BuildConfig.VNPAY_API_BASE_URL.trimEnd('/')
 
     private var title: String = ""
     private var cinema: String = ""
-    private var lich: String = ""
-    private var ghe: String = ""
-    private var iEmail: String = ""
-    private var tenn: String = ""
-    private var formattedDate: String = ""
-    private var gia: Int = 0
+    private var showtime: String = ""
+    private var seats: String = ""
+    private var email: String = ""
+    private var customerName: String = ""
+    private var bookingDate: String = ""
     private var province: String = ""
     private var posterUrl: String = ""
-    private var orderCode: String = ""
-    private var currentPaymentUrl: String = "https://sandbox.vnpayment.vn/tryitnow/Home/CreateOrder"
-    private var isCompleted: Boolean = false
-
-    private val testCardNumber = "9704198526191432198"
-    private val httpClient = OkHttpClient()
-    private val handler = Handler(Looper.getMainLooper())
+    private var amount: Int = 0
+    private var paymentId: String = ""
+    private var paymentUrl: String = ""
+    private var isCompleted = false
+    private var isCreatingPayment = false
+    private var pollAttempts = 0
     private var pollingRunnable: Runnable? = null
 
-    // Backend base URLs: 10.0.2.2 for Android emulator -> localhost on host machine
-    private val backendBaseUrl = "http://10.0.2.2:8000"
+    private val testCardNumber = "9704198526191432198"
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_vnpay_payment)
 
-        databaseTicker = FirebaseDatabase.getInstance().reference.child(Constants.NODE_TICKER)
+        readBookingFromIntent(intent)
+        paymentId = savedInstanceState?.getString("PAYMENT_ID")
+            ?: paymentIdFrom(intent)
+            ?: UUID.randomUUID().toString().replace("-", "").uppercase(Locale.ROOT)
+        paymentUrl = savedInstanceState?.getString("PAYMENT_URL").orEmpty()
 
-        // Nhận dữ liệu đơn hàng
-        title = intent.getStringExtra("FILM_TITLE") ?: "Phim Điện Ảnh"
-        cinema = intent.getStringExtra("cinema") ?: "Galaxy Cinema"
-        lich = intent.getStringExtra("LICH") ?: "19:00"
-        ghe = intent.getStringExtra("Ghe") ?: "A1"
-        province = intent.getStringExtra("province") ?: "Đà Nẵng"
-        posterUrl = intent.getStringExtra("FILM_POSTER_URL") ?: ""
-        iEmail = intent.getStringExtra("userEmail") ?: "khachhang@cinema.com"
-        tenn = intent.getStringExtra("userName") ?: (if (iEmail.isNotEmpty()) iEmail.substringBefore("@") else "Khách hàng")
-        formattedDate = intent.getStringExtra("ngaydat") ?: ""
-        gia = intent.getIntExtra("totalPrice", 60000)
-
-        // Sinh mã đơn hàng duy nhất
-        orderCode = "VNP" + System.currentTimeMillis().toString().takeLast(8)
-
-        // Ánh xạ View
         btnBack = findViewById(R.id.btnBack)
         webView = findViewById(R.id.webViewVnpay)
         progressBar = findViewById(R.id.progressBar)
         btnCopyCard = findViewById(R.id.btnCopyCard)
         btnShowVNPayQR = findViewById(R.id.btnShowVNPayQR)
         btnOpenBrowser = findViewById(R.id.btnOpenBrowser)
-        btnDemoSuccess = findViewById(R.id.btnDemoSuccess)
+        btnRefreshStatus = findViewById(R.id.btnRefreshStatus)
         txtOrderSummary = findViewById(R.id.txtOrderSummary)
         txtStatusBadge = findViewById(R.id.txtStatusBadge)
+        btnShowVNPayQR.isEnabled = false
+        btnOpenBrowser.isEnabled = false
 
-        txtOrderSummary.text = "Phim: $title | Rạp: $cinema\nSuất: $lich | Ghế: $ghe | Tổng: ${String.format("%,d", gia)} VNĐ"
+        updateOrderSummary()
+        setupWebView()
 
-        btnBack.setOnClickListener {
-            confirmExit()
-        }
-
+        btnBack.setOnClickListener { confirmExit() }
         btnCopyCard.setOnClickListener {
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = ClipData.newPlainText("VNPay Card", testCardNumber)
-            clipboard.setPrimaryClip(clip)
-            Toast.makeText(this, "Đã sao chép số thẻ test NCB: $testCardNumber", Toast.LENGTH_SHORT).show()
+            clipboard.setPrimaryClip(ClipData.newPlainText("VNPAY sandbox card", testCardNumber))
+            Toast.makeText(this, "Đã sao chép số thẻ thử nghiệm NCB", Toast.LENGTH_SHORT).show()
         }
-
-        btnShowVNPayQR.setOnClickListener {
-            showVNPayQRDialog()
-        }
-
+        btnShowVNPayQR.setOnClickListener { showVNPayQRDialog() }
         btnOpenBrowser.setOnClickListener {
-            if (currentPaymentUrl.isNotEmpty()) {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(currentPaymentUrl))
-                startActivity(intent)
+            if (paymentUrl.isBlank()) {
+                Toast.makeText(this, "Đang tạo liên kết thanh toán", Toast.LENGTH_SHORT).show()
+            } else {
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(paymentUrl)))
+                } catch (_: Exception) {
+                    Toast.makeText(this, "Không mở được trình duyệt", Toast.LENGTH_SHORT).show()
+                }
             }
         }
-
-        btnDemoSuccess.setOnClickListener {
-            triggerBackendVerify()
+        btnRefreshStatus.setOnClickListener {
+            if (paymentUrl.isBlank() && hasBookingDetails()) requestBackendPaymentUrl() else pollPaymentStatus()
         }
 
-        setupWebView()
-        requestBackendPaymentUrl()
-        startOrderStatusPolling()
+        if (hasBookingDetails()) {
+            if (paymentUrl.isBlank()) {
+                requestBackendPaymentUrl()
+            } else {
+                webView.loadUrl(paymentUrl)
+                startStatusPolling(0)
+            }
+        } else {
+            txtStatusBadge.text = "Đang kiểm tra giao dịch"
+            startStatusPolling(0)
+        }
+    }
+
+    private fun paymentIdFrom(source: Intent): String? {
+        val extraId = source.getStringExtra("PAYMENT_ID")
+        if (!extraId.isNullOrBlank()) return extraId
+        val data = source.data ?: return null
+        if (data.scheme == "doan" && data.host == "vnpay-return") return data.getQueryParameter("paymentId")
+        return null
+    }
+
+    private fun readBookingFromIntent(source: Intent) {
+        title = source.getStringExtra("FILM_TITLE") ?: ""
+        cinema = source.getStringExtra("cinema") ?: ""
+        showtime = source.getStringExtra("LICH") ?: ""
+        seats = source.getStringExtra("Ghe") ?: ""
+        province = source.getStringExtra("province") ?: ""
+        posterUrl = source.getStringExtra("FILM_POSTER_URL") ?: ""
+        email = source.getStringExtra("userEmail") ?: ""
+        customerName = source.getStringExtra("userName") ?: ""
+        bookingDate = source.getStringExtra("ngaydat") ?: ""
+        amount = source.getIntExtra("totalPrice", 0)
+    }
+
+    private fun hasBookingDetails(): Boolean =
+        title.isNotBlank() && cinema.isNotBlank() && showtime.isNotBlank() && seats.isNotBlank()
+
+    private fun updateOrderSummary() {
+        txtOrderSummary.text = if (title.isBlank()) {
+            "Đang tải thông tin giao dịch..."
+        } else {
+            "Phim: $title | Rạp: $cinema\nSuất: $showtime | Ghế: $seats | Tổng: " +
+                String.format(Locale.getDefault(), "%,d", amount) + " VNĐ"
+        }
     }
 
     private fun requestBackendPaymentUrl() {
-        // Gửi yêu cầu lên backend tạo URL thanh toán VNPay có ký mã HMAC-SHA512
-        val jsonPayload = JSONObject().apply {
-            put("order_code", orderCode)
-            put("bank_code", "NCB")
+        if (isCreatingPayment || paymentUrl.isNotBlank()) return
+        if (apiBaseUrl.isBlank()) {
+            showError("Chưa cấu hình địa chỉ máy chủ thanh toán")
+            return
         }
 
-        val requestBody = jsonPayload.toString().toRequestBody("application/json".toMediaType())
+        isCreatingPayment = true
+        progressBar.visibility = View.VISIBLE
+        txtStatusBadge.text = "Đang tạo giao dịch"
+        val payload = JSONObject().apply {
+            put("orderId", paymentId)
+            put("title", title)
+            put("cinema", cinema)
+            put("showtime", showtime)
+            put("seats", seats.split(",").map { it.trim() }.filter { it.isNotEmpty() })
+            put("province", province)
+            put("bookingDate", bookingDate)
+            put("email", email)
+            put("customerName", customerName)
+            put("posterUrl", posterUrl)
+        }
+        val body = payload.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
         val request = Request.Builder()
-            .url("$backendBaseUrl/api/payment/vnpay/create")
-            .post(requestBody)
+            .url("$apiBaseUrl/api/payments/vnpay/create")
+            .post(body)
             .build()
 
         httpClient.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                // Fallback nếu server backend chưa chạy trên port 8000
                 runOnUiThread {
-                    currentPaymentUrl = "https://sandbox.vnpayment.vn/tryitnow/Home/CreateOrder"
-                    webView.loadUrl(currentPaymentUrl)
+                    isCreatingPayment = false
+                    progressBar.visibility = View.GONE
+                    showError("Không kết nối được máy chủ thanh toán. Vui lòng thử lại.")
                 }
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val bodyStr = response.body?.string() ?: ""
-                try {
-                    val jsonObj = JSONObject(bodyStr)
-                    if (jsonObj.optBoolean("success", false)) {
-                        val paymentUrl = jsonObj.getString("payment_url")
-                        runOnUiThread {
-                            currentPaymentUrl = paymentUrl
-                            webView.loadUrl(paymentUrl)
+                val responseBody = response.body?.string().orEmpty()
+                runOnUiThread {
+                    isCreatingPayment = false
+                    progressBar.visibility = View.GONE
+                    try {
+                        val json = JSONObject(responseBody)
+                        if (!response.isSuccessful || !json.optBoolean("success", false)) {
+                            showError(json.optString("message", "Không tạo được giao dịch VNPAY"))
+                            return@runOnUiThread
                         }
-                    } else {
-                        runOnUiThread {
-                            webView.loadUrl(currentPaymentUrl)
-                        }
-                    }
-                } catch (e: Exception) {
-                    runOnUiThread {
-                        webView.loadUrl(currentPaymentUrl)
+                        paymentUrl = json.getString("paymentUrl")
+                        amount = json.optInt("amount", amount)
+                        updateOrderSummary()
+                        txtStatusBadge.text = "Chờ thanh toán"
+                        btnShowVNPayQR.isEnabled = true
+                        btnOpenBrowser.isEnabled = true
+                        webView.loadUrl(paymentUrl)
+                        startStatusPolling(3000)
+                    } catch (_: Exception) {
+                        showError("Máy chủ trả về dữ liệu thanh toán không hợp lệ")
                     }
                 }
             }
@@ -186,41 +240,34 @@ class VNPayPaymentActivity : AppCompatActivity() {
             loadWithOverviewMode = true
             useWideViewPort = true
             setSupportZoom(true)
+            allowFileAccess = false
+            allowContentAccess = false
         }
-
         webView.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
                 progressBar.visibility = View.VISIBLE
             }
 
-            override fun onPageFinished(view: WebView?, url: String?) {
-                super.onPageFinished(view, url)
+            override fun onPageFinished(view: WebView?, url: String?, favicon: Bitmap?) {
+                super.onPageFinished(view, url, favicon)
                 progressBar.visibility = View.GONE
-
-                // Nếu đang ở trang TryItNow của VNPay, tự động điền form
-                if (url?.contains("tryitnow") == true) {
-                    val jsFill = """
-                        (function() {
-                            var amountInput = document.getElementById('Amount');
-                            if (amountInput) amountInput.value = '$gia';
-                            var descInput = document.getElementById('OrderDescription');
-                            if (descInput) descInput.value = 'Thanh toan ve xem phim: $title';
-                            var bankSelect = document.getElementById('bankcode');
-                            if (bankSelect) bankSelect.value = 'NCB';
-                        })();
-                    """.trimIndent()
-                    view?.evaluateJavascript(jsFill, null)
-                }
             }
 
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                val url = request?.url.toString()
-
-                // Kiểm tra mã phản hồi thành công từ VNPay
-                if (url.contains("vnp_ResponseCode=00") || url.contains("vnp_TransactionStatus=00")) {
-                    processPaymentSuccess()
+                val uri = request?.url ?: return false
+                if (uri.scheme == "doan" && uri.host == "vnpay-return") {
+                    uri.getQueryParameter("paymentId")?.let { paymentId = it }
+                    pollPaymentStatus()
                     return true
+                }
+                if (uri.scheme != "https" && uri.scheme != "http") {
+                    return try {
+                        startActivity(Intent(Intent.ACTION_VIEW, uri))
+                        true
+                    } catch (_: Exception) {
+                        true
+                    }
                 }
                 return false
             }
@@ -228,6 +275,10 @@ class VNPayPaymentActivity : AppCompatActivity() {
     }
 
     private fun showVNPayQRDialog() {
+        if (paymentUrl.isBlank()) {
+            Toast.makeText(this, "Liên kết thanh toán chưa sẵn sàng", Toast.LENGTH_SHORT).show()
+            return
+        }
         val dialog = AlertDialog.Builder(this).create()
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -235,218 +286,171 @@ class VNPayPaymentActivity : AppCompatActivity() {
             gravity = Gravity.CENTER
             setBackgroundColor(android.graphics.Color.parseColor("#1A1D28"))
         }
-
-        val titleTv = TextView(this).apply {
-            text = "Mã QR Mở Trang VNPAY Sandbox"
+        val titleView = TextView(this).apply {
+            text = "Mã QR thanh toán VNPAY"
             textSize = 17f
             setTextColor(android.graphics.Color.parseColor("#E5A93C"))
             setTypeface(null, android.graphics.Typeface.BOLD)
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 8)
         }
-
-        val descTv = TextView(this).apply {
-            text = "Quét bằng Camera để mở cổng thanh toán VNPay trên điện thoại khác.\n(Lưu ý: Đây là mã QR liên kết thanh toán, không phải VietQR chuyển khoản cá nhân)"
+        val description = TextView(this).apply {
+            text = "Quét mã để mở đúng giao dịch đã tạo cho đơn vé này."
             textSize = 12f
             setTextColor(android.graphics.Color.parseColor("#B0B5C6"))
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, 16)
         }
-
-        val qrImageView = ImageView(this).apply {
+        val qrImage = ImageView(this).apply {
             layoutParams = LinearLayout.LayoutParams(520, 520)
             scaleType = ImageView.ScaleType.FIT_CENTER
-            val qrBitmap = QRCodeUtils.generateQRCode(currentPaymentUrl, 520, 520)
-            if (qrBitmap != null) {
-                setImageBitmap(qrBitmap)
-            }
+            QRCodeUtils.generateQRCode(paymentUrl, 520, 520)?.let { setImageBitmap(it) }
         }
-
-        val closeBtn = Button(this).apply {
+        val closeButton = Button(this).apply {
             text = "Đóng"
             setBackgroundColor(android.graphics.Color.parseColor("#2B3042"))
             setTextColor(android.graphics.Color.WHITE)
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                topMargin = 20
-            }
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = 20 }
             setOnClickListener { dialog.dismiss() }
         }
-
-        layout.addView(titleTv)
-        layout.addView(descTv)
-        layout.addView(qrImageView)
-        layout.addView(closeBtn)
-
+        layout.addView(titleView)
+        layout.addView(description)
+        layout.addView(qrImage)
+        layout.addView(closeButton)
         dialog.setView(layout)
         dialog.show()
     }
 
-    private fun startOrderStatusPolling() {
+    private fun startStatusPolling(delayMillis: Long) {
+        pollingRunnable?.let { handler.removeCallbacks(it) }
+        pollAttempts = 0
         pollingRunnable = object : Runnable {
-            override fun run() {
-                if (isCompleted || isFinishing) return
-
-                val request = Request.Builder()
-                    .url("$backendBaseUrl/api/orders/$orderCode/status")
-                    .get()
-                    .build()
-
-                httpClient.newCall(request).enqueue(object : Callback {
-                    override fun onFailure(call: Call, e: IOException) {
-                        // Không kết nối được backend, thử lại sau 3s
-                        handler.postDelayed(pollingRunnable!!, 3000)
-                    }
-
-                    override fun onResponse(call: Call, response: Response) {
-                        val body = response.body?.string() ?: ""
-                        try {
-                            val json = JSONObject(body)
-                            val status = json.optString("status", "")
-                            if (status == "PAID") {
-                                runOnUiThread {
-                                    txtStatusBadge.text = "ĐÃ XÁC NHẬN"
-                                    txtStatusBadge.setBackgroundColor(android.graphics.Color.parseColor("#4CAF50"))
-                                    processPaymentSuccess()
-                                }
-                                return
-                            }
-                        } catch (_: Exception) {}
-
-                        handler.postDelayed(pollingRunnable!!, 3000)
-                    }
-                })
-            }
+            override fun run() = pollPaymentStatus()
         }
-        handler.postDelayed(pollingRunnable!!, 3000)
+        handler.postDelayed(pollingRunnable!!, delayMillis)
     }
 
-    private fun triggerBackendVerify() {
-        progressBar.visibility = View.VISIBLE
-        val jsonPayload = JSONObject().apply {
-            put("order_code", orderCode)
-            put("response_code", "00")
-            put("bank_code", "NCB")
-        }
+    private fun scheduleNextPoll() {
+        if (isCompleted || isFinishing || pollAttempts >= 310) return
+        pollingRunnable?.let { handler.postDelayed(it, 3000) }
+    }
 
-        val requestBody = jsonPayload.toString().toRequestBody("application/json".toMediaType())
+    private fun pollPaymentStatus() {
+        if (isCompleted || paymentId.isBlank() || apiBaseUrl.isBlank()) return
+        pollAttempts++
         val request = Request.Builder()
-            .url("$backendBaseUrl/api/admin/simulate-vnpay-callback")
-            .post(requestBody)
+            .url("$apiBaseUrl/api/payments/vnpay/status/$paymentId")
+            .get()
             .build()
-
         httpClient.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread {
-                    progressBar.visibility = View.GONE
-                    // Fallback xử lý cục bộ
-                    processPaymentSuccess()
-                }
+                runOnUiThread { scheduleNextPoll() }
             }
 
             override fun onResponse(call: Call, response: Response) {
+                val responseBody = response.body?.string().orEmpty()
                 runOnUiThread {
-                    progressBar.visibility = View.GONE
-                    processPaymentSuccess()
+                    try {
+                        val json = JSONObject(responseBody)
+                        if (!response.isSuccessful || !json.optBoolean("success", false)) {
+                            scheduleNextPoll()
+                            return@runOnUiThread
+                        }
+                        when (json.optString("status")) {
+                            "PAID" -> openIssuedTicket(json)
+                            "FAILED" -> {
+                                txtStatusBadge.text = "Thanh toán thất bại"
+                                scheduleNextPoll()
+                            }
+                            "EXPIRED" -> {
+                                txtStatusBadge.text = "Giao dịch đã hết hạn"
+                                scheduleNextPoll()
+                            }
+                            else -> {
+                                txtStatusBadge.text = "Chờ thanh toán"
+                                scheduleNextPoll()
+                            }
+                        }
+                    } catch (_: Exception) {
+                        scheduleNextPoll()
+                    }
                 }
             }
         })
     }
 
-    private fun processPaymentSuccess() {
+    private fun openIssuedTicket(payment: JSONObject) {
         if (isCompleted) return
         isCompleted = true
         pollingRunnable?.let { handler.removeCallbacks(it) }
+        txtStatusBadge.text = "ĐÃ XÁC NHẬN"
+        txtStatusBadge.setBackgroundColor(android.graphics.Color.parseColor("#4CAF50"))
 
-        // Lưu vé vào Firebase RTDB
-        val ticketId = databaseTicker.push().key ?: System.currentTimeMillis().toString()
-        val ticket = TicketOrder(
-            rap = cinema,
-            email = iEmail,
-            ghe = ghe,
-            gia = "$gia VNĐ",
-            lich = lich,
-            ngaydat = formattedDate,
-            phim = title,
-            pttt = "VNPay Sandbox (NCB)",
-            ten = tenn,
-            tt = "Đã xác nhận"
-        )
-
-        databaseTicker.child(ticketId).setValue(ticket).addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                // Gửi email xác nhận tự động
-                sendEmailConfirmation(ticket)
-
-                Toast.makeText(this, "🎉 Thanh toán VNPay thành công! Đã phát hành vé điện tử.", Toast.LENGTH_LONG).show()
-
-                // Chuyển thẳng sang xem Cuống vé điện tử (TicketDetailActivity)
-                val intent = Intent(this, TicketDetailActivity::class.java).apply {
-                    putExtra("TICKET_ID", ticketId)
-                    putExtra("FILM_TITLE", title)
-                    putExtra("CINEMA", cinema)
-                    putExtra("SHOWTIME", lich)
-                    putExtra("SEAT", ghe)
-                    putExtra("PRICE", "$gia VNĐ")
-                    putExtra("ORDER_DATE", formattedDate)
-                    putExtra("STATUS", "Đã xác nhận")
-                    putExtra("PAYMENT_METHOD", "VNPay Sandbox (NCB)")
-                    putExtra("FILM_POSTER_URL", posterUrl)
-                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                startActivity(intent)
-                finish()
-            } else {
-                Toast.makeText(this, "Lỗi lưu vé: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
-                finish()
-            }
+        val ticketIntent = Intent(this, TicketDetailActivity::class.java).apply {
+            putExtra("TICKET_CODE", payment.optString("ticketCode", "CINE-" + paymentId.takeLast(8)))
+            putExtra("TICKET_ID", paymentId)
+            putExtra("FILM_TITLE", payment.optString("title", title))
+            putExtra("cinema", payment.optString("cinema", cinema))
+            putExtra("CINEMA", payment.optString("cinema", cinema))
+            putExtra("LICH", payment.optString("showtime", showtime))
+            putExtra("SHOWTIME", payment.optString("showtime", showtime))
+            putExtra("Ghe", payment.optString("seats", seats))
+            putExtra("SEAT", payment.optString("seats", seats))
+            putExtra("province", payment.optString("province", province))
+            putExtra("ngaydat", payment.optString("bookingDate", bookingDate))
+            putExtra("totalPrice", payment.optInt("amount", amount))
+            putExtra("PRICE", payment.optString("amount", amount.toString()) + " VNĐ")
+            putExtra("pttt", "VNPAY Sandbox")
+            putExtra("PAYMENT_METHOD", "VNPAY Sandbox")
+            putExtra("tt", "Đã xác nhận")
+            putExtra("STATUS", "Đã xác nhận")
+            putExtra("FILM_POSTER_URL", payment.optString("posterUrl", posterUrl))
+            putExtra("userEmail", payment.optString("email", email))
+            putExtra("userName", payment.optString("customerName", customerName))
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
         }
+        Toast.makeText(this, "Thanh toán VNPAY thành công. Vé đã được phát hành.", Toast.LENGTH_LONG).show()
+        startActivity(ticketIntent)
+        finish()
     }
 
-    private fun sendEmailConfirmation(ticket: TicketOrder) {
-        val subject = "Xác nhận đặt vé xem phim thành công qua VNPAY - $title"
-        val message = """
-            Xin chào ${ticket.ten},
-            
-            Bạn đã thanh toán thành công qua cổng VNPAY Sandbox cho đơn vé:
-            --------------------------------------------------
-            Phim: ${ticket.phim}
-            Rạp: ${ticket.rap}
-            Suất chiếu: ${ticket.lich}
-            Ghế: ${ticket.ghe}
-            Tổng tiền: ${ticket.gia}
-            Phương thức: ${ticket.pttt}
-            Trạng thái: ${ticket.tt}
-            Mã đơn: $orderCode
-            --------------------------------------------------
-            Mã QR check-in tại quầy: CINETICKET:$orderCode|FILM:${ticket.phim}|SEAT:${ticket.ghe}
-            
-            Cảm ơn bạn đã lựa chọn dịch vụ của chúng tôi!
-        """.trimIndent()
-
-        Thread {
-            try {
-                val sender = GMailSender("anhnguyenthac2004@gmail.com", "vbsb unct bzvy lkvt")
-                sender.sendMail(ticket.email, subject, message)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }.start()
+    private fun showError(message: String) {
+        txtStatusBadge.text = "Chưa tạo được giao dịch"
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
     private fun confirmExit() {
         AlertDialog.Builder(this)
-            .setTitle("Hủy thanh toán?")
-            .setMessage("Giao dịch thanh toán VNPAY chưa hoàn tất. Bạn có chắc chắn muốn thoát?")
-            .setPositiveButton("Thoát") { _, _ ->
-                pollingRunnable?.let { handler.removeCallbacks(it) }
-                finish()
-            }
+            .setTitle("Rời màn hình thanh toán?")
+            .setMessage("Giao dịch vẫn có thể được cập nhật khi bạn quay lại ứng dụng.")
+            .setPositiveButton("Rời đi") { _, _ -> finish() }
             .setNegativeButton("Ở lại", null)
             .show()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString("PAYMENT_ID", paymentId)
+        outState.putString("PAYMENT_URL", paymentUrl)
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        paymentIdFrom(intent)?.let {
+            paymentId = it
+            isCompleted = false
+            startStatusPolling(0)
+        }
+    }
+
     override fun onDestroy() {
-        super.onDestroy()
         pollingRunnable?.let { handler.removeCallbacks(it) }
+        webView.stopLoading()
+        webView.destroy()
+        super.onDestroy()
     }
 }
