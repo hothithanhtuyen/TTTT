@@ -46,6 +46,11 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    testOptions {
+        unitTests.all {
+            it.systemProperty("java.library.path", "")
+        }
+    }
 }
 
 dependencies {
@@ -68,4 +73,13 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
+}
+
+// Compatibility tasks for IDE test runners (e.g. Android Studio / IntelliJ 'testClasses' and 'classes')
+tasks.register("testClasses") {
+    dependsOn("compileDebugUnitTestSources")
+}
+
+tasks.register("classes") {
+    dependsOn("compileDebugSources")
 }
