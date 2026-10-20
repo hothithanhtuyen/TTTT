@@ -249,8 +249,8 @@ class VNPayPaymentActivity : AppCompatActivity() {
                 progressBar.visibility = View.VISIBLE
             }
 
-            override fun onPageFinished(view: WebView?, url: String?, favicon: Bitmap?) {
-                super.onPageFinished(view, url, favicon)
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
                 progressBar.visibility = View.GONE
             }
 
