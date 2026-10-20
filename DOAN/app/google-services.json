@@ -1,14 +1,13 @@
 {
   "project_info": {
-    "project_number": "757005641582",
-    "firebase_url": "https://doan-ecdfa-default-rtdb.firebaseio.com",
-    "project_id": "doan-ecdfa",
-    "storage_bucket": "doan-ecdfa.firebasestorage.app"
+    "project_number": "391585665213",
+    "project_id": "tttt-cinema-20261020",
+    "storage_bucket": "tttt-cinema-20261020.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:757005641582:android:ac744dbc00370d360e037f",
+        "mobilesdk_app_id": "1:391585665213:android:6fc1354c2d60d6df3d67d4",
         "android_client_info": {
           "package_name": "com.example.doan"
         }
@@ -16,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBJb-6gasN90cfNkaox13uLwEII1EJ8ic8"
+          "current_key": "AIzaSyA_8FQC4BQx0K-eLYu0tqjKxp2d6xhtErA"
         }
       ],
       "services": {

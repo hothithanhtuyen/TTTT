@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -14,7 +14,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.DOAN"
-        android:usesCleartextTraffic="true"
+        android:usesCleartextTraffic="false"
         tools:targetApi="31">
         <activity
             android:name=".ui.auth.MainActivity"
@@ -24,39 +24,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ui.auth.RegisterActivity" />
-        <activity android:name=".ui.auth.ForgotPasswordActivity" />
-        <activity android:name=".ui.user.HomeActivity" android:exported="true" />
-        <activity android:name=".ui.user.UserInfoActivity" />
-        <activity android:name=".ui.user.SelectProvinceActivity" />
-        <activity android:name=".ui.user.SelectCinemaActivity" />
-        <activity android:name=".ui.user.SelectSeatActivity" />
-        <activity android:name=".ui.user.EventActivity" />
-        <activity android:name=".ui.user.PromotionActivity" />
-        <activity android:name=".ui.user.TicketActivity" android:exported="true" />
-        <activity android:name=".ui.user.FilmActivity" android:exported="true" />
-        <activity android:name=".ui.user.BookingActivity" />
-        <activity android:name=".ui.user.ConfirmActivity" />
-        <activity
-            android:name=".ui.user.VNPayPaymentActivity"
-            android:exported="true"
-            android:launchMode="singleTop">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="doan" android:host="vnpay-return" />
-            </intent-filter>
-        </activity>
-        <activity android:name=".ui.user.QRPaymentActivity" android:exported="true" />
-        <activity android:name=".ui.user.TicketDetailActivity" android:exported="true" />
-        <activity android:name=".ui.user.ShowInfoActivity" />
-        <activity android:name=".ui.admin.AdminActivity" />
-        <activity android:name=".ui.admin.EventManagementActivity" />
-        <activity android:name=".ui.admin.PromotionManagementActivity" />
-        <activity android:name=".ui.admin.FilmManagerActivity" />
-        <activity android:name=".ui.admin.ConfirmationActivity" />
-        <activity android:name=".ui.admin.ListFilmActivity" />
     </application>
 
 </manifest>

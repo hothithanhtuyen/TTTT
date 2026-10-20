@@ -1,12 +1,14 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.compose.compiler)
     id("com.google.gms.google-services")
 }
 
 val vnpayApiBaseUrl = providers.gradleProperty("VNPAY_API_BASE_URL")
-    .orElse("https://asia-southeast1-doan-ecdfa.cloudfunctions.net/vnpayApi")
+    .orElse("https://asia-southeast1-tttt-cinema-20261020.cloudfunctions.net/vnpayApi")
     .get()
+val firebaseAuthEmulatorHost = providers.gradleProperty("FIREBASE_AUTH_EMULATOR_HOST").orElse("").get()
 
 android {
     namespace = "com.example.doan"
@@ -19,10 +21,12 @@ android {
         versionCode = 1
         versionName = "1.0"
         buildConfigField("String", "VNPAY_API_BASE_URL", "\"$vnpayApiBaseUrl\"")
+        buildConfigField("String", "FIREBASE_AUTH_EMULATOR_HOST", "\"$firebaseAuthEmulatorHost\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
         buildConfig = true
+        compose = true
     }
     packaging {
         resources {
@@ -54,6 +58,16 @@ android {
 }
 
 dependencies {
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.coil.compose)
+    implementation(libs.zxing.android.embedded)
+    debugImplementation(libs.androidx.compose.ui.tooling)
     implementation("com.sun.mail:android-mail:1.6.6")
     implementation("com.sun.mail:android-activation:1.6.6")
     implementation("com.google.code.gson:gson:2.10.1")
