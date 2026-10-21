@@ -1,6 +1,6 @@
 # TTTT Cinema
 
-Ứng dụng Android đặt vé xem phim: tìm phim, chọn rạp/ngày/suất/ghế, thanh toán VNPAY Sandbox hoặc giữ chỗ thanh toán tại quầy, xem vé QR và xác thực vé tại rạp.
+Ứng dụng Android đặt vé xem phim: tìm phim, chọn rạp/ngày/suất/ghế, xác nhận thanh toán bằng VNPAY Sandbox, xem QR thanh toán rồi nhận QR vé sau khi giao dịch được máy chủ xác minh.
 
 ## Mở và build Android
 
@@ -36,7 +36,7 @@
 
 ## Deploy Cloud Functions và VNPAY Sandbox
 
-Backend trong `functions/` tự tính tiền, giữ ghế theo phim/rạp/ngày/suất, ký URL VNPAY, xác minh chữ ký callback/IPN, và chỉ phát hành vé sau khi giao dịch được xác nhận. Thanh toán tại quầy chỉ phát hành vé khi tài khoản có quyền staff/admin xác nhận đã thu tiền. Các callback lặp được xử lý idempotent; mỗi vé chỉ được soát một lần.
+Backend trong `functions/` tự tính tiền, giữ ghế theo phim/rạp/ngày/suất, ký URL VNPAY, xác minh chữ ký callback/IPN, và chỉ phát hành vé sau khi giao dịch được xác nhận. Đơn mới chỉ chấp nhận VNPAY; callback lặp được xử lý idempotent và mỗi vé chỉ được soát một lần.
 
 1. Cài Node.js 22 và Firebase CLI; đăng nhập bằng tài khoản có quyền trên project.
 2. Tạo Realtime Database trước và bảo đảm Rules đang chặn truy cập trực tiếp.
@@ -129,7 +129,7 @@ Chỉ dùng thông tin thẻ test này trong Sandbox.
 1. Tạo tài khoản Firebase Authentication **bằng email riêng mà bạn kiểm soát**; tài khoản này đăng nhập như khách bình thường.
 2. Đăng xuất khỏi tài khoản khách, đăng ký email admin riêng trong app, đăng nhập, nhập bootstrap code để kích hoạt admin đầu tiên.
 3. Admin có thể cấp quyền staff cho email đã đăng ký. Backend xác thực custom claims từ Firebase ID token; client không thể tự bật quyền bằng cờ gửi lên.
-4. Nhân viên mở **Tài khoản → Khu vực nhân viên**, xác nhận đã thu tiền tại quầy hoặc dùng camera quét QR vé. Backend chỉ chấp nhận vé đã thanh toán và từ chối quét lại.
+4. Nhân viên mở **Tài khoản → Khu vực nhân viên** và dùng camera quét QR vé. Backend chỉ chấp nhận vé đã thanh toán và từ chối quét lại.
 
 Ứng dụng không thể tạo hộ một hộp thư Gmail/email bên ngoài. Hãy dùng email admin riêng do bạn sở hữu để nhận link khôi phục mật khẩu.
 

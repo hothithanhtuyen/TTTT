@@ -6,7 +6,6 @@ import com.example.doan.BuildConfig
 import com.example.doan.model.BookingDraft
 import com.example.doan.model.CinemaOrder
 import com.example.doan.model.CinemaTicket
-import com.example.doan.model.PendingCounterOrder
 import com.example.doan.model.TicketCheckResult
 import com.google.firebase.auth.FirebaseAuth
 import okhttp3.Call
@@ -33,11 +32,11 @@ object CinemaApi {
     private val jsonType = "application/json; charset=utf-8".toMediaType()
     private val baseUrl get() = BuildConfig.VNPAY_API_BASE_URL.trimEnd('/')
 
-    fun createOrder(draft: BookingDraft, method: String, callback: (Result<CinemaOrder>) -> Unit) {
+    fun createOrder(draft: BookingDraft, callback: (Result<CinemaOrder>) -> Unit) {
         val orderId = UUID.randomUUID().toString().replace("-", "").uppercase()
         val body = JSONObject()
             .put("orderId", orderId)
-            .put("paymentMethod", method)
+            .put("paymentMethod", "VNPAY")
             .put("title", draft.movie.title)
             .put("bookingDate", draft.bookingDate)
             .put("cinema", draft.cinema)
@@ -84,36 +83,6 @@ object CinemaApi {
                 },
                 onFailure = { callback(Result.failure(it)) },
             )
-        }
-    }
-
-    fun getPendingCounterOrders(callback: (Result<List<PendingCounterOrder>>) -> Unit) {
-        execute("/api/staff/orders", "GET", null, true) { result ->
-            result.fold(
-                onSuccess = { json ->
-                    val items = json.optJSONArray("orders").toObjectList { item ->
-                        PendingCounterOrder(
-                            orderId = item.optString("orderId"),
-                            customerName = item.optString("customerName"),
-                            email = item.optString("email"),
-                            title = item.optString("title"),
-                            cinema = item.optString("cinema"),
-                            showtime = item.optString("showtime"),
-                            seats = item.optString("seats"),
-                            amount = item.optLong("amount"),
-                            bookingDate = item.optString("bookingDate"),
-                        )
-                    }
-                    callback(Result.success(items))
-                },
-                onFailure = { callback(Result.failure(it)) },
-            )
-        }
-    }
-
-    fun confirmCounterPayment(orderId: String, callback: (Result<Unit>) -> Unit) {
-        execute("/api/staff/orders/$orderId/confirm-counter", "POST", JSONObject(), true) { result ->
-            callback(result.map { Unit })
         }
     }
 

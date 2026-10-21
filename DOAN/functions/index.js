@@ -20,7 +20,6 @@ const API_BASE_URL = defineString('VNPAY_API_BASE_URL', { default: '' });
 
 const VNPAY_PAY_URL = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
 const PAYMENT_TTL_MS = 15 * 60 * 1000;
-const COUNTER_ORDER_TTL_MS = 2 * 60 * 60 * 1000;
 
 function text(value, maxLength = 160) {
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
@@ -368,7 +367,7 @@ async function createOrder(request, response, identity) {
   const paymentId = text(body.orderId, 40).toUpperCase();
   if (!ORDER_PATTERN.test(paymentId)) fail('Mã đơn hàng không hợp lệ.');
   const method = text(body.paymentMethod, 20).toUpperCase();
-  if (!['VNPAY', 'COUNTER'].includes(method)) fail('Phương thức thanh toán không hợp lệ.');
+  if (method !== 'VNPAY') fail('Đơn đặt vé chỉ hỗ trợ thanh toán VNPAY.');
   const booking = normalizeBooking(body, identity);
   const fingerprint = bookingFingerprint(booking, method);
   const paymentRef = db.ref('PaymentOrders/' + paymentId);
@@ -391,13 +390,13 @@ async function createOrder(request, response, identity) {
 
   await ensureSeatsAvailable(booking);
   const now = Date.now();
-  const ttl = method === 'VNPAY' ? PAYMENT_TTL_MS : COUNTER_ORDER_TTL_MS;
+  const ttl = PAYMENT_TTL_MS;
   const payment = {
     paymentId,
     ...booking,
     amount: amountForSeats(booking.seats),
     paymentMethod: method,
-    status: method === 'VNPAY' ? 'PENDING_VNPAY' : 'PENDING_COUNTER',
+    status: 'PENDING_VNPAY',
     createdAt: now,
     expiresAt: now + ttl,
     lockExpiresAt: now + ttl,
@@ -407,7 +406,7 @@ async function createOrder(request, response, identity) {
 
   await reserveSeats(paymentId, booking, payment.expiresAt);
   try {
-    if (method === 'VNPAY') payment.paymentUrl = buildPaymentUrl(vnpayParams(payment, request, now));
+    payment.paymentUrl = buildPaymentUrl(vnpayParams(payment, request, now));
     payment.orderSignature = stateSignature('ORDER', payment);
     payment.statusSignature = stateSignature('STATUS', payment);
     const result = await paymentRef.transaction((current) => current || payment, undefined, false);
@@ -542,62 +541,6 @@ async function listTickets(identity) {
     });
   });
   return tickets.sort((a, b) => Number(b.issuedAt) - Number(a.issuedAt)).slice(0, 100);
-}
-
-async function listCounterOrders() {
-  const snapshot = await db.ref('PaymentOrders').once('value');
-  const orders = [];
-  snapshot.forEach((child) => {
-    const order = child.val() || {};
-    if (order.paymentMethod !== 'COUNTER' || order.status !== 'PENDING_COUNTER' || !hasValidOrderSignature(order)) return;
-    orders.push({
-      orderId: order.paymentId,
-      customerName: order.customerName,
-      email: order.email,
-      title: order.title,
-      bookingDate: order.bookingDate,
-      cinema: order.cinema,
-      showtime: order.showtime,
-      seats: order.seats.join(', '),
-      amount: order.amount,
-      expiresAt: order.expiresAt,
-    });
-  });
-  return orders.sort((a, b) => a.expiresAt - b.expiresAt).slice(0, 100);
-}
-
-async function confirmCounterOrder(paymentId, identity) {
-  requireStaff(identity);
-  const paymentRef = db.ref('PaymentOrders/' + paymentId);
-  const payment = (await paymentRef.once('value')).val();
-  if (!payment || !hasValidOrderSignature(payment) || payment.paymentMethod !== 'COUNTER') fail('Không tìm thấy đơn thanh toán tại quầy.', 404);
-  if (payment.status === 'PAID' && hasValidStatusSignature(payment)) {
-    const ticket = await issueTicket(paymentRef, payment);
-    return ticket;
-  }
-  if (payment.status !== 'PENDING_COUNTER') fail('Đơn không còn ở trạng thái chờ thanh toán.', 409);
-  if (Number(payment.expiresAt) <= Date.now()) {
-    await paymentRef.transaction((current) => {
-      if (!current || current.status !== 'PENDING_COUNTER') return current;
-      const updated = { ...current, status: 'EXPIRED', expiredAt: Date.now() };
-      updated.statusSignature = stateSignature('STATUS', updated);
-      return updated;
-    }, undefined, false);
-    await releaseSeats(payment);
-    fail('Mã giữ chỗ đã hết hạn. Khách cần tạo đơn mới.', 409);
-  }
-
-  const transaction = await paymentRef.transaction((current) => {
-    if (!current || !hasValidOrderSignature(current) || current.status !== 'PENDING_COUNTER' || Number(current.expiresAt) <= Date.now()) return;
-    const updated = { ...current, status: 'PAID', paidAt: Date.now(), confirmedByUid: identity.uid };
-    updated.statusSignature = stateSignature('STATUS', updated);
-    return updated;
-  }, undefined, false);
-  const paid = transaction.snapshot.val();
-  if (!paid || paid.status !== 'PAID' || !hasValidStatusSignature(paid)) fail('Đơn vừa được cập nhật bởi nhân viên khác.', 409);
-  const ticket = await issueTicket(paymentRef, paid);
-  await releaseSeats(paid);
-  return ticket;
 }
 
 async function verifyTicket(ticketQr, identity) {
@@ -744,12 +687,6 @@ exports.vnpayApi = onRequest(
         response.json({ success: true, ...await verifyTicket(text(request.body?.ticketQr, 500), identity) });
         return;
       }
-      if (request.method === 'GET' && path === '/api/staff/orders') {
-        requireStaff(identity);
-        response.json({ success: true, orders: await listCounterOrders() });
-        return;
-      }
-
       const orderMatch = path.match(/^\/api\/orders\/status\/([A-Fa-f0-9]{32})$/);
       if (request.method === 'GET' && orderMatch) {
         const order = await readOrder(orderMatch[1].toUpperCase(), identity);
@@ -757,13 +694,6 @@ exports.vnpayApi = onRequest(
         response.json(order);
         return;
       }
-      const counterMatch = path.match(/^\/api\/staff\/orders\/([A-Fa-f0-9]{32})\/confirm-counter$/);
-      if (request.method === 'POST' && counterMatch) {
-        const ticket = await confirmCounterOrder(counterMatch[1].toUpperCase(), identity);
-        response.json({ success: true, ticketCode: ticket.ticketCode, ticketQr: ticket.ticketQr });
-        return;
-      }
-
       fail('Không tìm thấy API.', 404);
     } catch (error) {
       routeError(response, error);

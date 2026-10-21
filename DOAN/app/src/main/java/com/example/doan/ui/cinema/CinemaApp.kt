@@ -95,7 +95,6 @@ import com.example.doan.model.CinemaCatalogue
 import com.example.doan.model.CinemaMovie
 import com.example.doan.model.CinemaOrder
 import com.example.doan.model.CinemaTicket
-import com.example.doan.model.PendingCounterOrder
 import com.example.doan.model.TicketCheckResult
 import com.example.doan.ui.cinema.CinemaTheme
 import com.example.doan.utils.CinemaApi
@@ -131,12 +130,10 @@ fun CinemaApp() {
     var selectedSeats by remember { mutableStateOf(emptySet<String>()) }
     var unavailableSeats by remember { mutableStateOf(emptySet<String>()) }
     var seatLoadMessage by remember { mutableStateOf("") }
-    var paymentMethod by remember { mutableStateOf("VNPAY") }
     var order by remember { mutableStateOf<CinemaOrder?>(null) }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
     var tickets by remember { mutableStateOf(emptyList<CinemaTicket>()) }
-    var pendingOrders by remember { mutableStateOf(emptyList<PendingCounterOrder>()) }
     var staffMessage by remember { mutableStateOf("") }
     var ticketCheck by remember { mutableStateOf<TicketCheckResult?>(null) }
     var isStaff by remember { mutableStateOf(false) }
@@ -175,7 +172,7 @@ fun CinemaApp() {
                     CinemaApi.getOrder(orderId) { result ->
                         result.onSuccess { latest ->
                             order = latest
-                            if (latest.status == "PENDING_COUNTER" || latest.status == "PENDING_VNPAY") {
+                            if (latest.status == "PENDING_VNPAY") {
                                 handler.postDelayed(this, 3_500)
                             }
                         }.onFailure { message = it.message.orEmpty() }
@@ -316,11 +313,9 @@ fun CinemaApp() {
                 showtime = showtime,
                 seats = selectedSeats.toList().sorted(),
                 userEmail = currentUser?.email,
-                paymentMethod = paymentMethod,
                 busy = busy,
                 message = message,
                 onBack = { page = CinemaPage.SEATS },
-                onPaymentMethod = { paymentMethod = it },
                 onSignIn = { message = "Hãy đăng nhập để giữ đơn đặt vé."; page = CinemaPage.ACCOUNT },
                 onCreateOrder = { name ->
                     val user = auth.currentUser
@@ -331,7 +326,7 @@ fun CinemaApp() {
                         busy = true
                         message = ""
                         val draft = BookingDraft(selectedMovie, bookingDate, province, cinema, showtime, selectedSeats.toList().sorted(), name)
-                        CinemaApi.createOrder(draft, paymentMethod) { result ->
+                        CinemaApi.createOrder(draft) { result ->
                             busy = false
                             result.onSuccess {
                                 order = it
@@ -343,7 +338,6 @@ fun CinemaApp() {
             )
             CinemaPage.ORDER -> OrderPage(
                 order = order,
-                paymentMethod = paymentMethod,
                 busy = busy,
                 message = message,
                 onBack = { page = CinemaPage.HOME },
@@ -391,7 +385,7 @@ fun CinemaApp() {
                 isAdmin = isAdmin,
                 busy = busy,
                 message = message,
-                onStaff = { message = ""; staffMessage = ""; pendingOrders = emptyList(); page = CinemaPage.STAFF },
+                onStaff = { message = ""; staffMessage = ""; page = CinemaPage.STAFF },
                 onSignOut = {
                     auth.signOut()
                     message = "Bạn đã đăng xuất."
@@ -459,30 +453,10 @@ fun CinemaApp() {
                 },
             )
             CinemaPage.STAFF -> StaffPage(
-                orders = pendingOrders,
                 busy = busy,
                 message = staffMessage,
                 ticketCheck = ticketCheck,
                 onBack = { page = CinemaPage.ACCOUNT },
-                onRefresh = {
-                    busy = true
-                    staffMessage = ""
-                    CinemaApi.getPendingCounterOrders { result ->
-                        busy = false
-                        result.onSuccess { pendingOrders = it }
-                            .onFailure { staffMessage = it.message ?: "Tài khoản chưa được cấp quyền nhân viên." }
-                    }
-                },
-                onConfirm = { item ->
-                    busy = true
-                    CinemaApi.confirmCounterPayment(item.orderId) { result ->
-                        busy = false
-                        result.onSuccess {
-                            pendingOrders = pendingOrders.filterNot { it.orderId == item.orderId }
-                            staffMessage = "Đã xác nhận thanh toán tại quầy. Vé đã được phát hành."
-                        }.onFailure { staffMessage = it.message.orEmpty() }
-                    }
-                },
                 onVerifyTicket = { qr ->
                     busy = true
                     staffMessage = ""
@@ -766,11 +740,9 @@ private fun CheckoutPage(
     showtime: String,
     seats: List<String>,
     userEmail: String?,
-    paymentMethod: String,
     busy: Boolean,
     message: String,
     onBack: () -> Unit,
-    onPaymentMethod: (String) -> Unit,
     onSignIn: () -> Unit,
     onCreateOrder: (String) -> Unit,
 ) {
@@ -804,23 +776,6 @@ private fun CheckoutPage(
             Spacer(Modifier.height(8.dp))
             Text("Email nhận vé: $userEmail", color = CinemaMuted, fontSize = 12.sp)
         }
-        Spacer(Modifier.height(20.dp))
-        SectionTitle("Phương thức thanh toán", "")
-        PaymentChoice(
-            selected = paymentMethod == "VNPAY",
-            title = "VNPAY Sandbox",
-            detail = "Quét QR hoặc mở cổng thanh toán thử nghiệm",
-            badge = "ONLINE",
-            onClick = { onPaymentMethod("VNPAY") },
-        )
-        Spacer(Modifier.height(10.dp))
-        PaymentChoice(
-            selected = paymentMethod == "COUNTER",
-            title = "Thanh toán tại quầy",
-            detail = "Giữ chỗ và đưa mã đặt vé cho nhân viên",
-            badge = "TẠI RẠP",
-            onClick = { onPaymentMethod("COUNTER") },
-        )
         Spacer(Modifier.height(18.dp))
         Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = CinemaSurface)) {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -840,7 +795,7 @@ private fun CheckoutPage(
             colors = ButtonDefaults.buttonColors(containerColor = CinemaRed),
         ) {
             if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-            else Text("Tạo đơn · ${formatMoney(BookingRules.totalPrice(seats.size))}", fontWeight = FontWeight.Bold)
+            else Text("Xác nhận thanh toán · ${formatMoney(BookingRules.totalPrice(seats.size))}", fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(16.dp))
     }
@@ -849,7 +804,6 @@ private fun CheckoutPage(
 @Composable
 private fun OrderPage(
     order: CinemaOrder?,
-    paymentMethod: String,
     busy: Boolean,
     message: String,
     onBack: () -> Unit,
@@ -866,11 +820,7 @@ private fun OrderPage(
             Text("Đang tạo đơn đặt vé…", color = Color.White, modifier = Modifier.padding(top = 14.dp))
         } else {
             val paid = current.status == "PAID"
-            val codeContent = when {
-                paid -> current.ticketQr.ifBlank { "TTTT-TICKET:${current.ticketCode}" }
-                paymentMethod == "VNPAY" && current.paymentUrl.isNotBlank() -> current.paymentUrl
-                else -> "TTTT-ORDER:${current.orderId}"
-            }
+            val codeContent = if (paid) current.ticketQr else current.paymentUrl
             val qr = remember(codeContent) { QRCodeUtils.generateQRCode(codeContent, 420, 420) }
             Spacer(Modifier.height(10.dp))
             Icon(
@@ -882,7 +832,6 @@ private fun OrderPage(
             Text(
                 when (current.status) {
                     "PAID" -> "Vé đã được phát hành"
-                    "PENDING_COUNTER" -> "Chờ thanh toán tại quầy"
                     "PENDING_VNPAY" -> "Chờ VNPAY xác nhận"
                     "EXPIRED" -> "Đơn đã hết hạn"
                     else -> "Đơn đang được xử lý"
@@ -899,10 +848,23 @@ private fun OrderPage(
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
             ) {
-                if (qr != null) Image(qr.asImageBitmap(), contentDescription = "QR thanh toán/tra cứu vé", modifier = Modifier.fillMaxWidth().padding(15.dp).aspectRatio(1f))
+                if (qr != null) {
+                    Image(
+                        qr.asImageBitmap(),
+                        contentDescription = if (paid) "QR vé đã thanh toán" else "QR thanh toán VNPAY",
+                        modifier = Modifier.fillMaxWidth().padding(15.dp).aspectRatio(1f),
+                    )
+                } else {
+                    Text(
+                        if (paid) "Máy chủ chưa trả mã QR vé. Hãy kiểm tra lại trạng thái." else "Chưa nhận được QR thanh toán từ máy chủ.",
+                        color = CinemaMuted,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(18.dp),
+                    )
+                }
             }
             Text(
-                if (paid) "Đưa QR vé này cho nhân viên soát vé." else if (paymentMethod == "COUNTER") "Đưa mã này cho nhân viên quầy để thanh toán." else "Quét QR thanh toán VNPAY hoặc mở cổng thanh toán bên dưới.",
+                if (paid) "Đưa QR vé này cho nhân viên soát vé." else "Quét QR để mở thanh toán VNPAY hoặc mở cổng thanh toán bên dưới.",
                 color = CinemaMuted,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
@@ -917,7 +879,7 @@ private fun OrderPage(
                     Text(formatMoney(current.amount), color = CinemaGold, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
-            if (!paid && paymentMethod == "VNPAY" && current.paymentUrl.isNotBlank()) {
+            if (!paid && current.paymentUrl.isNotBlank()) {
                 Button(onClick = onOpenPayment, modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(52.dp), shape = RoundedCornerShape(15.dp), colors = ButtonDefaults.buttonColors(containerColor = CinemaRed)) {
                     Text("Mở VNPAY Sandbox", fontWeight = FontWeight.Bold)
                 }
@@ -1096,13 +1058,10 @@ private fun AccountPage(
 
 @Composable
 private fun StaffPage(
-    orders: List<PendingCounterOrder>,
     busy: Boolean,
     message: String,
     ticketCheck: TicketCheckResult?,
     onBack: () -> Unit,
-    onRefresh: () -> Unit,
-    onConfirm: (PendingCounterOrder) -> Unit,
     onVerifyTicket: (String) -> Unit,
 ) {
     var ticketQr by remember { mutableStateOf("") }
@@ -1113,10 +1072,9 @@ private fun StaffPage(
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Quay lại", tint = Color.White) }
             Column(Modifier.weight(1f)) {
-                Text("QUẦY THANH TOÁN", color = CinemaRed, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
-                Text("Đơn chờ thanh toán", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("NHÂN VIÊN", color = CinemaRed, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
+                Text("Kiểm tra vé", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
-            IconButton(onClick = onRefresh, enabled = !busy) { Icon(Icons.Filled.Refresh, contentDescription = "Tải lại", tint = Color.White) }
         }
         if (message.isNotBlank()) InlineMessage(message, isError = message.contains("quyền", true) || message.contains("403"))
         Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = CinemaSurface), modifier = Modifier.padding(top = 8.dp)) {
@@ -1153,48 +1111,7 @@ private fun StaffPage(
                 }
             }
         }
-        if (busy) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = CinemaRed) }
-        else if (orders.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(if (message.isBlank()) "Chưa có đơn chờ thanh toán." else "", color = CinemaMuted, textAlign = TextAlign.Center)
-            }
-        } else {
-            LazyColumn(contentPadding = PaddingValues(top = 14.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
-                items(orders, key = { it.orderId }) { item ->
-                    Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = CinemaSurface)) {
-                        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                            Text(item.customerName, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text(item.email, color = CinemaMuted, fontSize = 11.sp)
-                            Text(item.title, color = Color.White, fontSize = 13.sp)
-                            Text("${item.bookingDate} · ${item.cinema} · ${item.showtime} · ${item.seats}", color = CinemaMuted, fontSize = 12.sp)
-                            Text("Mã ${item.orderId.take(8)} · ${formatMoney(item.amount)}", color = CinemaGold, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                            Button(onClick = { onConfirm(item) }, enabled = !busy, modifier = Modifier.fillMaxWidth().padding(top = 7.dp), shape = RoundedCornerShape(13.dp), colors = ButtonDefaults.buttonColors(containerColor = CinemaRed)) {
-                                Text("Đã thu tiền · Phát hành vé", fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PaymentChoice(selected: Boolean, title: String, detail: String, badge: String, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).border(1.dp, if (selected) CinemaRed else Color(0xFF30343E), RoundedCornerShape(17.dp)),
-        shape = RoundedCornerShape(17.dp),
-        colors = CardDefaults.cardColors(containerColor = if (selected) Color(0xFF22181F) else CinemaSurface),
-    ) {
-        Row(Modifier.fillMaxWidth().padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(20.dp).border(2.dp, if (selected) CinemaRed else CinemaMuted, CircleShape).padding(4.dp).background(if (selected) CinemaRed else Color.Transparent, CircleShape))
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Text(detail, color = CinemaMuted, fontSize = 11.sp, lineHeight = 15.sp)
-            }
-            Text(badge, color = if (selected) CinemaGold else CinemaMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-        }
+        if (busy) Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = CinemaRed) }
     }
 }
 
