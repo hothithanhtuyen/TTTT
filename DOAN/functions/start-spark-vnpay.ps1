@@ -36,7 +36,7 @@ Write-Host 'Đang chạy Functions Emulator; giữ terminal và tunnel mở tron
 
 Push-Location (Join-Path $PSScriptRoot '..')
 try {
-    & npx firebase-tools@15.34.0 emulators:start --only functions --project $projectId
+    & npx.cmd --yes firebase-tools@15.34.0 emulators:start --only functions --project $projectId
     if ($LASTEXITCODE -ne 0) {
         throw "Firebase Emulator thoát với mã lỗi $LASTEXITCODE."
     }

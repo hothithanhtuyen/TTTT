@@ -19,3 +19,6 @@ functions/.env
 functions/.env.*
 !functions/.env.example
 functions/.secret.local
+
+# Firebase CLI emulator diagnostics
+/firebase-debug.log

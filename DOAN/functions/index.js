@@ -1,16 +1,18 @@
 'use strict';
 
 const crypto = require('node:crypto');
-const admin = require('firebase-admin');
+const { getApps, initializeApp } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
+const { getDatabase } = require('firebase-admin/database');
 const { onRequest } = require('firebase-functions/v2/https');
 const { setGlobalOptions } = require('firebase-functions/v2');
 const { defineSecret, defineString } = require('firebase-functions/params');
 const { SEAT_PRICE_VND, BOOKING_FEE_VND, SEAT_PATTERN, ORDER_PATTERN, amountForSeats } = require('./domain');
 
-if (admin.apps.length === 0) admin.initializeApp();
+if (getApps().length === 0) initializeApp();
 setGlobalOptions({ region: 'asia-southeast1', maxInstances: 10 });
 
-const db = admin.database();
+const db = getDatabase();
 const HASH_SECRET = defineSecret('VNPAY_HASH_SECRET');
 const ADMIN_BOOTSTRAP_CODE = defineSecret('ADMIN_BOOTSTRAP_CODE');
 const TMN_CODE = defineString('VNPAY_TMN_CODE', { default: 'GW923J6D' });
@@ -63,7 +65,7 @@ async function authenticate(request) {
   const match = authorization.match(/^Bearer\s+(.+)$/i);
   if (!match) fail('Vui lòng đăng nhập để tiếp tục.', 401);
   try {
-    return await admin.auth().verifyIdToken(match[1], true);
+    return await getAuth().verifyIdToken(match[1], true);
   } catch (_) {
     fail('Phiên đăng nhập không hợp lệ hoặc đã hết hạn.', 401);
   }
@@ -650,8 +652,8 @@ async function bootstrapAdmin(identity, code) {
   const ownerRef = db.ref('System/firstAdminUid');
   const result = await ownerRef.transaction((current) => current || identity.uid, undefined, false);
   if (!result.committed || result.snapshot.val() !== identity.uid) fail('Quyền quản trị ban đầu đã được thiết lập.', 409);
-  const user = await admin.auth().getUser(identity.uid);
-  await admin.auth().setCustomUserClaims(identity.uid, { ...user.customClaims, staff: true, admin: true });
+  const user = await getAuth().getUser(identity.uid);
+  await getAuth().setCustomUserClaims(identity.uid, { ...user.customClaims, staff: true, admin: true });
   return { success: true, message: 'Đã cấp quyền quản trị cho tài khoản này.' };
 }
 
@@ -660,11 +662,11 @@ async function grantStaff(email) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) fail('Email nhân viên không hợp lệ.');
   let user;
   try {
-    user = await admin.auth().getUserByEmail(cleanEmail);
+    user = await getAuth().getUserByEmail(cleanEmail);
   } catch (_) {
     fail('Hãy tạo tài khoản nhân viên trong ứng dụng trước.', 404);
   }
-  await admin.auth().setCustomUserClaims(user.uid, { ...user.customClaims, staff: true });
+  await getAuth().setCustomUserClaims(user.uid, { ...user.customClaims, staff: true });
   return { success: true, email: cleanEmail };
 }
 
