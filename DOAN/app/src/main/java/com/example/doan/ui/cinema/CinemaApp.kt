@@ -1,4 +1,4 @@
-﻿package com.example.doan.ui.cinema
+package com.example.doan.ui.cinema
 
 import android.annotation.SuppressLint
 import android.content.ClipData
@@ -6,6 +6,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.net.http.SslError
 import android.webkit.SslErrorHandler
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -1325,13 +1327,18 @@ private fun VNPayPaymentDialog(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     factory = { ctx ->
                         WebView(ctx).apply {
+                            WebView.setWebContentsDebuggingEnabled(true)
                             settings.apply {
                                 javaScriptEnabled = true
                                 domStorageEnabled = true
+                                databaseEnabled = true
                                 loadWithOverviewMode = true
                                 useWideViewPort = true
                                 setSupportZoom(true)
+                                javaScriptCanOpenWindowsAutomatically = true
+                                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                             }
+                            webChromeClient = WebChromeClient()
                             webViewClient = object : WebViewClient() {
                                 @SuppressLint("WebViewClientOnReceivedSslError")
                                 override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {

@@ -4,6 +4,9 @@
         <trust-anchors>
             <certificates src="system" />
             <certificates src="user" />
+            <certificates src="@raw/vnpay_cert_0" />
+            <certificates src="@raw/vnpay_cert_1" />
+            <certificates src="@raw/vnpay_cert_2" />
         </trust-anchors>
     </base-config>
     <domain-config cleartextTrafficPermitted="true">
@@ -13,6 +16,9 @@
         <trust-anchors>
             <certificates src="system" />
             <certificates src="user" />
+            <certificates src="@raw/vnpay_cert_0" />
+            <certificates src="@raw/vnpay_cert_1" />
+            <certificates src="@raw/vnpay_cert_2" />
         </trust-anchors>
     </domain-config>
 </network-security-config>
