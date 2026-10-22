@@ -7,6 +7,27 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+fun autoEnsureBackend() {
+    val script = rootProject.file("functions/ensure-backend.ps1")
+    if (script.isFile) {
+        try {
+            val process = ProcessBuilder("powershell.exe", "-ExecutionPolicy", "Bypass", "-File", script.absolutePath)
+                .directory(rootProject.projectDir)
+                .redirectErrorStream(true)
+                .start()
+            val output = process.inputStream.bufferedReader().use { it.readText() }
+            process.waitFor()
+            if (output.isNotBlank()) {
+                println(output.trim())
+            }
+        } catch (e: Exception) {
+            println("[VNPAY Backend] Lỗi khởi động tự động: ${e.message}")
+        }
+    }
+}
+
+autoEnsureBackend()
+
 val localPropertiesFile = rootProject.file("local.properties")
 val localApiBaseUrl = Properties().apply {
     if (localPropertiesFile.isFile) {
@@ -105,4 +126,13 @@ tasks.register("testClasses") {
 
 tasks.register("classes") {
     dependsOn("compileDebugSources")
+}
+
+
+tasks.register("ensureVnpayBackend") {
+    group = "vnpay"
+    description = "Kiem tra va tu dong khoi dong Cloudflare Tunnel cung Firebase Functions Emulator"
+    doLast {
+        autoEnsureBackend()
+    }
 }
