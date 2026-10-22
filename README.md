@@ -1,4 +1,4 @@
-# TTTT Cinema
+# Cinema
 
 Ứng dụng Android đặt vé xem phim. Mã nguồn Android, Firebase CLI, Cloud Functions, hướng dẫn build, test và cấu hình thanh toán nằm trong [DOAN](DOAN/README.md).
 

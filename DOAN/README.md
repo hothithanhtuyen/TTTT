@@ -1,4 +1,4 @@
-# TTTT Cinema
+# Cinema
 
 Ứng dụng Android đặt vé xem phim: tìm phim, chọn rạp/ngày/suất/ghế, xác nhận thanh toán bằng VNPAY Sandbox, xem QR thanh toán rồi nhận QR vé sau khi giao dịch được máy chủ xác minh.
 
@@ -96,7 +96,7 @@ Nếu không muốn liên kết Cloud Billing, có thể chạy chính backend F
    .\functions\start-spark-vnpay.ps1 -TunnelOrigin "https://abc.ngrok-free.app"
    ```
 
-   Script chạy Functions Emulator cho project thật, chỉ bật emulator cho backend và tự tạo địa chỉ API/IPN đầy đủ. Lệnh không deploy Functions và không yêu cầu nâng Firebase lên Blaze.
+   Script chạy Functions Emulator cho project thật, chỉ bật emulator cho backend và tự tạo địa chỉ API/IPN đầy đủ. Lệnh không deploy Functions và không yêu cầu nâng Firebase lên Blaze. Script lưu URL API vào `local.properties` để Android Studio dùng khi bấm **Run**.
 6. Build app trỏ cùng API base URL. Thay URL bằng origin HTTPS tunnel của bạn:
 
    ```powershell
@@ -110,7 +110,7 @@ Nếu không muốn liên kết Cloud Billing, có thể chạy chính backend F
    https://abc.ngrok-free.app/tttt-cinema-20261020/asia-southeast1/vnpayApi/api/payments/vnpay/ipn
    ```
 
-Tunnel thường đổi URL khi khởi động lại. Khi URL đổi, hãy cập nhật địa chỉ ở script, build app và cấu hình IPN trên VNPAY. VNPAY cần gọi được IPN qua HTTPS; địa chỉ LAN hoặc `localhost` không nhận được callback từ máy chủ VNPAY. Chỉ dùng cách này để phát triển/Sandbox, không xem máy cá nhân là backend vận hành liên tục.
+Tunnel thường đổi URL khi khởi động lại. Khi URL đổi, chạy lại script, chọn **File → Sync Project with Gradle Files** trong Android Studio và cập nhật IPN trên VNPAY. VNPAY cần gọi được IPN qua HTTPS; địa chỉ LAN hoặc `localhost` không nhận được callback từ máy chủ VNPAY. Chỉ dùng cách này để phát triển/Sandbox, không xem máy cá nhân là backend vận hành liên tục.
 
 ### Thẻ VNPAY Sandbox
 

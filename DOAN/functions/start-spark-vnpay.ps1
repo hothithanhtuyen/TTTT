@@ -24,6 +24,16 @@ if (-not (Test-Path -LiteralPath $secretFile -PathType Leaf)) {
 }
 
 $functionBaseUrl = $TunnelOrigin.TrimEnd('/') + '/' + $functionPath
+$projectRoot = Split-Path $PSScriptRoot -Parent
+$localPropertiesPath = Join-Path $projectRoot 'local.properties'
+$localProperties = @()
+if (Test-Path -LiteralPath $localPropertiesPath -PathType Leaf) {
+    $localProperties = @(Get-Content -LiteralPath $localPropertiesPath | Where-Object { $_ -notmatch '^\s*VNPAY_API_BASE_URL\s*=' })
+}
+$localProperties += "VNPAY_API_BASE_URL=$functionBaseUrl"
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllLines($localPropertiesPath, [string[]]$localProperties, $utf8NoBom)
+
 $previousApiBaseUrl = $env:VNPAY_API_BASE_URL
 $previousTmnCode = $env:VNPAY_TMN_CODE
 $env:VNPAY_API_BASE_URL = $functionBaseUrl
@@ -32,6 +42,7 @@ $env:VNPAY_TMN_CODE = 'GW923J6D'
 Write-Host "Project Firebase: $projectId"
 Write-Host "Backend API:      $functionBaseUrl"
 Write-Host "VNPAY IPN URL:    $functionBaseUrl/api/payments/vnpay/ipn"
+Write-Host 'Đã lưu Backend API vào local.properties để Android Studio dùng khi Run.'
 Write-Host 'Đang chạy Functions Emulator; giữ terminal và tunnel mở trong lúc thử thanh toán.'
 
 Push-Location (Join-Path $PSScriptRoot '..')

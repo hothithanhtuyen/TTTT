@@ -494,7 +494,7 @@ private fun HomePage(
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("TTTT  ·  CINEMA", color = CinemaRed, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text("RẠP PHIM", color = CinemaRed, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Text("Xin chào${userName?.let { ", ${it.substringBefore(' ')}"}.orEmpty()}", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 }
                 IconButton(onClick = onAccount, modifier = Modifier.background(CinemaSurface, CircleShape)) {
@@ -940,7 +940,7 @@ private fun TicketsPage(
 
 @Composable
 private fun TicketCard(ticket: CinemaTicket) {
-    val qrContent = ticket.ticketQr.ifBlank { "TTTT-TICKET:${ticket.ticketCode}" }
+    val qrContent = ticket.ticketQr
     val qr = remember(qrContent) { QRCodeUtils.generateQRCode(qrContent, 280, 280) }
     Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = CinemaSurface)) {
         Row(Modifier.fillMaxWidth().padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -948,8 +948,7 @@ private fun TicketCard(ticket: CinemaTicket) {
                 Text(ticket.title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Text(ticket.cinema, color = CinemaMuted, fontSize = 12.sp)
                 Text("${ticket.bookingDate} · ${ticket.showtime} · Ghế ${ticket.seats}", color = CinemaMuted, fontSize = 12.sp)
-                Text(ticket.ticketCode, color = CinemaGold, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text(ticket.paymentMethod, color = CinemaMuted, fontSize = 10.sp)
+                Text(ticket.ticketCode.substringAfter('-', ticket.ticketCode), color = CinemaGold, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
             qr?.let { Image(it.asImageBitmap(), contentDescription = "QR vé ${ticket.ticketCode}", modifier = Modifier.size(88.dp).clip(RoundedCornerShape(8.dp)).background(Color.White).padding(5.dp)) }
         }
@@ -979,7 +978,7 @@ private fun AccountPage(
     var createAccount by remember { mutableStateOf(false) }
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp)) {
         Spacer(Modifier.height(12.dp))
-        Text("TÀI KHOẢN TTTT", color = CinemaRed, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+        Text("TÀI KHOẢN", color = CinemaRed, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
         Text("${if (userEmail == null) "Đăng nhập" else "Xin chào"}", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 3.dp))
         Spacer(Modifier.height(18.dp))
         if (userEmail != null) {
@@ -1085,7 +1084,7 @@ private fun StaffPage(
                     onClick = {
                         val options = ScanOptions().apply {
                             setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                            setPrompt("Quét mã QR vé TTTT")
+                            setPrompt("Quét mã QR vé")
                             setBeepEnabled(false)
                             setOrientationLocked(false)
                         }

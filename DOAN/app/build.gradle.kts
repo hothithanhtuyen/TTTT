@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,8 +7,15 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+val localPropertiesFile = rootProject.file("local.properties")
+val localApiBaseUrl = Properties().apply {
+    if (localPropertiesFile.isFile) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}.getProperty("VNPAY_API_BASE_URL")
+
 val vnpayApiBaseUrl = providers.gradleProperty("VNPAY_API_BASE_URL")
-    .orElse("https://asia-southeast1-tttt-cinema-20261020.cloudfunctions.net/vnpayApi")
+    .orElse(localApiBaseUrl ?: "https://asia-southeast1-tttt-cinema-20261020.cloudfunctions.net/vnpayApi")
     .get()
 val firebaseAuthEmulatorHost = providers.gradleProperty("FIREBASE_AUTH_EMULATOR_HOST").orElse("").get()
 

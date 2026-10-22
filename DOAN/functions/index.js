@@ -9,7 +9,9 @@ const { setGlobalOptions } = require('firebase-functions/v2');
 const { defineSecret, defineString } = require('firebase-functions/params');
 const { SEAT_PRICE_VND, BOOKING_FEE_VND, SEAT_PATTERN, ORDER_PATTERN, amountForSeats } = require('./domain');
 
-if (getApps().length === 0) initializeApp();
+const DATABASE_URL = process.env.FIREBASE_DATABASE_URL ||
+  'https://tttt-cinema-20261020-default-rtdb.asia-southeast1.firebasedatabase.app';
+if (getApps().length === 0) initializeApp({ databaseURL: DATABASE_URL });
 setGlobalOptions({ region: 'asia-southeast1', maxInstances: 10 });
 
 const db = getDatabase();
@@ -324,7 +326,7 @@ function ticketFromPayment(payment, ticketCode) {
 }
 
 async function issueTicket(paymentRef, payment) {
-  const candidateCode = payment.ticketCode || 'TTTT-' + crypto.randomBytes(5).toString('hex').toUpperCase();
+  const candidateCode = payment.ticketCode || 'CINE-' + crypto.randomBytes(5).toString('hex').toUpperCase();
   const ticketRef = db.ref('Ticker/' + payment.paymentId);
   const transaction = await ticketRef.transaction((current) => current || ticketFromPayment(payment, candidateCode), undefined, false);
   const ticket = transaction.snapshot.val();
