@@ -656,7 +656,11 @@ private fun SeatPage(
         )
         Text("MÀN HÌNH", modifier = Modifier.fillMaxWidth().padding(top = 8.dp), textAlign = TextAlign.Center, color = CinemaMuted, fontSize = 10.sp, letterSpacing = 2.sp)
         Spacer(Modifier.height(24.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(11.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(11.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             ('A'..'F').forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(9.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(row.toString(), color = CinemaMuted, modifier = Modifier.width(20.dp), textAlign = TextAlign.Center, fontSize = 12.sp)
