@@ -1,4 +1,20 @@
-package com.example.doan.ui.cinema
+﻿package com.example.doan.ui.cinema
+
+import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.net.http.SslError
+import android.webkit.SslErrorHandler
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.Toast
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import android.content.Intent
@@ -138,6 +154,7 @@ fun CinemaApp() {
     var ticketCheck by remember { mutableStateOf<TicketCheckResult?>(null) }
     var isStaff by remember { mutableStateOf(false) }
     var isAdmin by remember { mutableStateOf(false) }
+    var showPaymentDialog by remember { mutableStateOf(false) }
 
     DisposableEffect(auth) {
         val listener = FirebaseAuth.AuthStateListener {
@@ -343,12 +360,7 @@ fun CinemaApp() {
                 message = message,
                 onBack = { page = CinemaPage.HOME },
                 onOpenPayment = {
-                    val url = order?.paymentUrl.orEmpty()
-                    if (url.isNotBlank()) {
-                        runCatching {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                        }.onFailure { message = "Không mở được trang VNPAY." }
-                    }
+                    showPaymentDialog = true
                 },
                 onRefresh = {
                     val id = order?.orderId ?: return@OrderPage
@@ -478,6 +490,25 @@ fun CinemaApp() {
                 },
             )
         }
+    }
+
+    if (showPaymentDialog && order != null && order!!.paymentUrl.isNotBlank()) {
+        VNPayPaymentDialog(
+            paymentUrl = order!!.paymentUrl,
+            onDismiss = { showPaymentDialog = false },
+            onPaymentDone = {
+                showPaymentDialog = false
+                val id = order?.orderId ?: return@VNPayPaymentDialog
+                busy = true
+                CinemaApi.getOrder(id) { result ->
+                    busy = false
+                    result.onSuccess {
+                        order = it
+                        message = ""
+                    }
+                }
+            }
+        )
     }
 }
 
@@ -1231,3 +1262,95 @@ private fun InlineMessage(message: String, isError: Boolean, modifier: Modifier 
 
 private fun formatMoney(amount: Long): String =
     NumberFormat.getIntegerInstance(Locale("vi", "VN")).format(amount) + " đ"
+
+
+@Composable
+private fun VNPayPaymentDialog(
+    paymentUrl: String,
+    onDismiss: () -> Unit,
+    onPaymentDone: () -> Unit,
+) {
+    val context = LocalContext.current
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color(0xFF0F1117)
+        ) {
+            Column(Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF161922))
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "Cổng thanh toán VNPAY Sandbox",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            "NCB: 9704198526191432198 | NGUYEN VAN A | 07/15 | OTP: 123456",
+                            color = CinemaGold,
+                            fontSize = 10.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    IconButton(onClick = {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("VNPAY Card", "9704198526191432198"))
+                        Toast.makeText(context, "Đã chép số thẻ NCB", Toast.LENGTH_SHORT).show()
+                    }) {
+                        Icon(Icons.Filled.ContentCopy, contentDescription = "Chép thẻ", tint = CinemaGold)
+                    }
+                    IconButton(onClick = {
+                        runCatching {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(paymentUrl)))
+                        }
+                    }) {
+                        Icon(Icons.Filled.ArrowForward, contentDescription = "Trình duyệt", tint = CinemaMuted)
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Filled.Close, contentDescription = "Đóng", tint = Color.White)
+                    }
+                }
+
+                AndroidView(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    factory = { ctx ->
+                        WebView(ctx).apply {
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                loadWithOverviewMode = true
+                                useWideViewPort = true
+                                setSupportZoom(true)
+                            }
+                            webViewClient = object : WebViewClient() {
+                                @SuppressLint("WebViewClientOnReceivedSslError")
+                                override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
+                                    handler?.proceed()
+                                }
+
+                                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                                    val uri = request?.url?.toString().orEmpty()
+                                    if (uri.contains("/api/payments/vnpay/return") || uri.contains("vnpay-return")) {
+                                        onPaymentDone()
+                                    }
+                                    return false
+                                }
+                            }
+                            loadUrl(paymentUrl)
+                        }
+                    }
+                )
+            }
+        }
+    }
+}

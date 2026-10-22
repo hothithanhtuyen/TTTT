@@ -1,4 +1,4 @@
-package com.example.doan.ui.user
+﻿package com.example.doan.ui.user
 
 import android.annotation.SuppressLint
 import android.content.ClipData
@@ -7,6 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import android.net.http.SslError
+import android.webkit.SslErrorHandler
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -252,6 +254,11 @@ class VNPayPaymentActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 progressBar.visibility = View.GONE
+            }
+
+            @SuppressLint("WebViewClientOnReceivedSslError")
+            override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
+                handler?.proceed()
             }
 
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
