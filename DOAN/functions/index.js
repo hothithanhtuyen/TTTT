@@ -425,19 +425,34 @@ async function createOrder(request, response, identity) {
 }
 
 async function handleVnpayCallback(params) {
-  if (!params || !verifySecureHash(params)) return { RspCode: '97', Message: 'Chữ ký không hợp lệ' };
-  if (params.vnp_TmnCode !== TMN_CODE.value()) return { RspCode: '97', Message: 'Mã website không hợp lệ' };
+  if (!params || !verifySecureHash(params)) {
+    return { RspCode: '97', Message: 'Chữ ký không hợp lệ', paymentStatus: 'UNCONFIRMED' };
+  }
+  if (params.vnp_TmnCode !== TMN_CODE.value()) {
+    return { RspCode: '97', Message: 'Mã website không hợp lệ', paymentStatus: 'UNCONFIRMED' };
+  }
   const paymentId = text(params.vnp_TxnRef, 40).toUpperCase();
-  if (!ORDER_PATTERN.test(paymentId)) return { RspCode: '01', Message: 'Không tìm thấy đơn thanh toán' };
+  if (!ORDER_PATTERN.test(paymentId)) {
+    return { RspCode: '01', Message: 'Không tìm thấy đơn thanh toán', paymentStatus: 'UNCONFIRMED' };
+  }
 
   const paymentRef = db.ref('PaymentOrders/' + paymentId);
   const payment = (await paymentRef.once('value')).val();
-  if (!payment) return { RspCode: '01', Message: 'Không tìm thấy đơn thanh toán' };
-  if (!hasValidOrderSignature(payment)) {
-    return { RspCode: '01', Message: 'Chữ ký dữ liệu đơn đặt vé trên máy chủ không hợp lệ' };
+  if (!payment) {
+    return { RspCode: '01', Message: 'Không tìm thấy đơn thanh toán', paymentStatus: 'UNCONFIRMED' };
   }
-  if (payment.paymentMethod !== 'VNPAY') return { RspCode: '01', Message: 'Phương thức thanh toán của đơn không khớp' };
-  if (String(payment.amount * 100) !== String(params.vnp_Amount)) return { RspCode: '04', Message: 'Số tiền không hợp lệ' };
+  if (!hasValidOrderSignature(payment)) {
+    return {
+      RspCode: '01', Message: 'Chữ ký dữ liệu đơn đặt vé trên máy chủ không hợp lệ',
+      paymentStatus: 'UNCONFIRMED',
+    };
+  }
+  if (payment.paymentMethod !== 'VNPAY') {
+    return { RspCode: '01', Message: 'Phương thức thanh toán của đơn không khớp', paymentStatus: 'UNCONFIRMED' };
+  }
+  if (String(payment.amount * 100) !== String(params.vnp_Amount)) {
+    return { RspCode: '04', Message: 'Số tiền không hợp lệ', paymentStatus: 'UNCONFIRMED' };
+  }
 
   const successful = params.vnp_ResponseCode === '00' && params.vnp_TransactionStatus === '00';
   if (!successful) {
@@ -449,7 +464,17 @@ async function handleVnpayCallback(params) {
     }, undefined, false);
     const latest = (await paymentRef.once('value')).val();
     if (latest?.status === 'FAILED') await releaseSeats(latest);
-    return { RspCode: '00', Message: 'Đã ghi nhận kết quả thanh toán' };
+    if (latest?.status === 'PAID' && hasValidStatusSignature(latest)) {
+      try {
+        await issueTicket(paymentRef, latest);
+        await releaseSeats(latest);
+        return { RspCode: '00', Message: 'Xác nhận thành công', paymentStatus: 'PAID' };
+      } catch (error) {
+        console.error('VNPAY ticket issue failed:', error.message);
+        return { RspCode: '00', Message: 'Đang hoàn tất phát hành vé', paymentStatus: 'PROCESSING' };
+      }
+    }
+    return { RspCode: '00', Message: 'Đã ghi nhận giao dịch không thành công', paymentStatus: 'FAILED' };
   }
 
   const result = await paymentRef.transaction((current) => {
@@ -500,15 +525,15 @@ async function handleVnpayCallback(params) {
       orderSignatureValid: paidOrderSignatureValid,
       expiresAtPassed: paidPayment ? Number(paidPayment.expiresAt) <= Date.now() : null,
     }));
-    return { RspCode: '02', Message: message };
+    return { RspCode: '02', Message: message, paymentStatus: 'PROCESSING' };
   }
   try {
     await issueTicket(paymentRef, paidPayment);
     await releaseSeats(paidPayment);
-    return { RspCode: '00', Message: 'Xác nhận thành công' };
+    return { RspCode: '00', Message: 'Xác nhận thành công', paymentStatus: 'PAID' };
   } catch (error) {
     console.error('VNPAY ticket issue failed:', error.message);
-    return { RspCode: '99', Message: 'Hệ thống đang hoàn tất phát hành vé' };
+    return { RspCode: '99', Message: 'Hệ thống đang hoàn tất phát hành vé', paymentStatus: 'PROCESSING' };
   }
 }
 
@@ -651,26 +676,32 @@ async function grantStaff(email) {
 }
 
 function sendReturnPage(response, result) {
-  const valid = result.RspCode === '00';
-  const title = valid ? 'Đã nhận kết quả từ VNPAY' : 'Không xác nhận được giao dịch';
-  const details = {
-    '00': 'VNPAY đã gửi kết quả. Hãy quay lại ứng dụng để kiểm tra trạng thái vé.',
-    '01': result.Message || 'Không tìm thấy đơn thanh toán tương ứng trong hệ thống.',
-    '02': result.Message || 'Đơn thanh toán không còn hiệu lực hoặc đã hết hạn.',
-    '04': result.Message || 'Số tiền VNPAY trả về không khớp với đơn đặt vé.',
-    '97': result.Message === 'Mã website không hợp lệ'
-      ? 'Mã website VNPAY không khớp cấu hình máy chủ.'
-      : 'Chữ ký phản hồi VNPAY không hợp lệ. Hãy kiểm tra Hash Secret sandbox.',
-    '99': 'Giao dịch đã được ghi nhận; máy chủ đang hoàn tất phát hành vé. Hãy quay lại ứng dụng và kiểm tra lại.',
+  const messages = {
+    PAID: {
+      title: 'Thanh toán thành công',
+      message: 'Giao dịch đã được xác nhận và vé QR đã phát hành. Hãy quay lại ứng dụng, mở “Vé của tôi” để xem vé.',
+    },
+    FAILED: {
+      title: 'Thanh toán không thành công',
+      message: 'VNPAY đã trả về giao dịch thất bại. Hãy quay lại ứng dụng để kiểm tra đơn hoặc thử thanh toán lại.',
+    },
+    PROCESSING: {
+      title: 'Đang xác nhận giao dịch',
+      message: 'VNPAY đã gửi kết quả nhưng máy chủ đang hoàn tất xác nhận và phát hành vé. Hãy quay lại ứng dụng, trạng thái sẽ tự cập nhật.',
+    },
+    UNCONFIRMED: {
+      title: 'Không xác nhận được giao dịch',
+      message: 'Máy chủ chưa xác minh được phản hồi VNPAY. Hãy quay lại ứng dụng và kiểm tra trạng thái đơn.',
+    },
   };
-  const message = details[result.RspCode] || 'Máy chủ chưa xác minh được phản hồi VNPAY. Hãy quay lại ứng dụng và kiểm tra trạng thái.';
-  console.info('VNPAY return result:', result.RspCode, result.Message);
+  const state = messages[result.paymentStatus] || messages.UNCONFIRMED;
+  console.info('VNPAY return result:', result.RspCode, result.paymentStatus || 'UNCONFIRMED');
   response.status(200).type('html').send(
     '<!doctype html><html lang="vi"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-    '<title>TTTT Cinema · VNPAY Sandbox</title></head>' +
+    '<title>' + state.title + '</title></head>' +
     '<body style="font-family:Arial,sans-serif;background:#0b0d12;color:#fff;padding:32px;max-width:560px;margin:auto">' +
-    '<h2>' + title + '</h2><p style="color:#b9bdc8">' + message + '</p>' +
+    '<h2>' + state.title + '</h2><p style="color:#b9bdc8">' + state.message + '</p>' +
     '<p>Bạn có thể đóng trang này an toàn.</p></body></html>'
   );
 }
@@ -699,7 +730,8 @@ exports.vnpayApi = onRequest(
         return;
       }
       if (request.method === 'GET' && path === '/api/payments/vnpay/ipn') {
-        response.status(200).json(await handleVnpayCallback(request.query));
+        const result = await handleVnpayCallback(request.query);
+        response.status(200).json({ RspCode: result.RspCode, Message: result.Message });
         return;
       }
       if (request.method === 'GET' && path === '/api/payments/vnpay/return') {
