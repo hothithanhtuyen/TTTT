@@ -432,9 +432,11 @@ async function handleVnpayCallback(params) {
 
   const paymentRef = db.ref('PaymentOrders/' + paymentId);
   const payment = (await paymentRef.once('value')).val();
-  if (!payment || !hasValidOrderSignature(payment) || payment.paymentMethod !== 'VNPAY') {
-    return { RspCode: '01', Message: 'Không tìm thấy đơn thanh toán' };
+  if (!payment) return { RspCode: '01', Message: 'Không tìm thấy đơn thanh toán' };
+  if (!hasValidOrderSignature(payment)) {
+    return { RspCode: '01', Message: 'Chữ ký dữ liệu đơn đặt vé trên máy chủ không hợp lệ' };
   }
+  if (payment.paymentMethod !== 'VNPAY') return { RspCode: '01', Message: 'Phương thức thanh toán của đơn không khớp' };
   if (String(payment.amount * 100) !== String(params.vnp_Amount)) return { RspCode: '04', Message: 'Số tiền không hợp lệ' };
 
   const successful = params.vnp_ResponseCode === '00' && params.vnp_TransactionStatus === '00';
@@ -464,8 +466,19 @@ async function handleVnpayCallback(params) {
     return updated;
   }, undefined, false);
   const paidPayment = result.snapshot.val();
-  if (!paidPayment || paidPayment.status !== 'PAID' || !hasValidOrderSignature(paidPayment)) {
-    return { RspCode: '02', Message: 'Đơn thanh toán không còn hiệu lực' };
+  const paidOrderSignatureValid = hasValidOrderSignature(paidPayment);
+  if (!paidPayment || !paidOrderSignatureValid || paidPayment.status !== 'PAID') {
+    const currentStatus = paidPayment?.status || 'không tồn tại';
+    const message = !paidOrderSignatureValid
+      ? 'Dữ liệu đơn đặt vé trên máy chủ không còn hợp lệ.'
+      : 'VNPAY đã báo thành công nhưng đơn trên máy chủ vẫn ở trạng thái ' + currentStatus + '.';
+    console.warn('VNPAY settlement did not reach PAID:', JSON.stringify({
+      committed: result.committed,
+      currentStatus,
+      orderSignatureValid: paidOrderSignatureValid,
+      expiresAtPassed: paidPayment ? Number(paidPayment.expiresAt) <= Date.now() : null,
+    }));
+    return { RspCode: '02', Message: message };
   }
   try {
     await issueTicket(paymentRef, paidPayment);
@@ -620,9 +633,9 @@ function sendReturnPage(response, result) {
   const title = valid ? 'Đã nhận kết quả từ VNPAY' : 'Không xác nhận được giao dịch';
   const details = {
     '00': 'VNPAY đã gửi kết quả. Hãy quay lại ứng dụng để kiểm tra trạng thái vé.',
-    '01': 'Không tìm thấy đơn thanh toán tương ứng trong hệ thống.',
-    '02': 'Đơn thanh toán không còn hiệu lực hoặc đã hết hạn.',
-    '04': 'Số tiền VNPAY trả về không khớp với đơn đặt vé.',
+    '01': result.Message || 'Không tìm thấy đơn thanh toán tương ứng trong hệ thống.',
+    '02': result.Message || 'Đơn thanh toán không còn hiệu lực hoặc đã hết hạn.',
+    '04': result.Message || 'Số tiền VNPAY trả về không khớp với đơn đặt vé.',
     '97': result.Message === 'Mã website không hợp lệ'
       ? 'Mã website VNPAY không khớp cấu hình máy chủ.'
       : 'Chữ ký phản hồi VNPAY không hợp lệ. Hãy kiểm tra Hash Secret sandbox.',
