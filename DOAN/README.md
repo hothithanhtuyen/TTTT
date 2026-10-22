@@ -18,30 +18,72 @@
 
 Firebase là dịch vụ cloud nên không cần chép database sang máy mới. Dự án dùng lại Firebase project `tttt-cinema-20261020`; máy mới cần đăng nhập tài khoản Google có quyền truy cập project. Hai file cấu hình Firebase đã được lưu trong Git: `.firebaserc` và `app/google-services.json`.
 
-1. Cài Android Studio với Android SDK 35/JDK 17, Node.js 22, Google Cloud CLI và `cloudflared`. Clone GitHub rồi mở đúng thư mục `DOAN`:
+1. Mở PowerShell và cài Git, Android Studio, Node.js 22, cùng Cloudflare Tunnel bằng `winget`:
+
+   ```powershell
+   winget install --id Git.Git --exact --accept-source-agreements --accept-package-agreements
+   winget install --id Google.AndroidStudio --exact --accept-source-agreements --accept-package-agreements
+   winget install --id OpenJS.NodeJS.22 --exact --accept-source-agreements --accept-package-agreements
+   ```
+
+   Cài Cloudflare Tunnel từ MSI Windows x64 chính thức:
+
+   ```powershell
+   $cloudflaredInstaller = Join-Path $env:TEMP 'cloudflared-windows-amd64.msi'
+   Invoke-WebRequest -Uri 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.msi' -OutFile $cloudflaredInstaller
+   Start-Process -FilePath msiexec.exe -ArgumentList "/i `"$cloudflaredInstaller`"" -Wait
+   ```
+
+   Cài Google Cloud CLI bằng installer chính thức:
+
+   ```powershell
+   $gcloudInstaller = Join-Path $env:TEMP 'GoogleCloudSDKInstaller.exe'
+   Invoke-WebRequest -Uri 'https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe' -OutFile $gcloudInstaller
+   Start-Process -FilePath $gcloudInstaller -Wait
+   ```
+
+   Nếu `winget` chưa được nhận diện, cài **App Installer** từ Microsoft Store rồi mở lại PowerShell. Sau khi cài xong, đóng/mở terminal mới. Kiểm tra các lệnh đã vào PATH:
+
+   ```powershell
+   git --version
+   node --version
+   npm --version
+   cloudflared --version
+   & "$env:LOCALAPPDATA\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd" --version
+   ```
+
+   Android Studio có Java runtime riêng; trong **SDK Manager**, cài **Android SDK Platform 35** và các build tools được gợi ý.
+
+2. Clone GitHub rồi vào đúng thư mục ứng dụng `DOAN`:
 
    ```powershell
    git clone https://github.com/hothithanhtuyen/TTTT.git
    cd TTTT\DOAN
    ```
 
-   [Hướng dẫn cài Google Cloud CLI trên Windows](https://docs.cloud.google.com/sdk/docs/install-sdk) · [Tải cloudflared cho Windows](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/downloads/).
+   Mở `DOAN` bằng Android Studio một lần và hoàn tất Gradle Sync. Việc này tạo `local.properties` có đường dẫn SDK; script khởi động backend sẽ giữ lại đường dẫn đó.
 
-   Mở thư mục `DOAN` bằng Android Studio một lần, cài Android SDK 35 nếu được hỏi và hoàn tất Gradle Sync. Việc này tạo `local.properties` có đường dẫn SDK; script khởi động backend sẽ giữ lại đường dẫn đó.
-
-2. Đăng nhập Firebase CLI và Application Default Credentials bằng tài khoản có quyền trên project. Nếu `gcloud` chưa nhận diện trong PowerShell sau khi cài, đóng/mở lại terminal; nếu vẫn chưa có trong `PATH`, dùng đường dẫn cài mặc định:
+3. Cài các package backend theo lockfile và đăng nhập Firebase CLI:
 
    ```powershell
+   Push-Location .\functions
+   npm ci
+   Pop-Location
    npx.cmd --yes firebase-tools@15.34.0 login
+   ```
+
+4. Đăng nhập Application Default Credentials bằng tài khoản Google có quyền trên project. Nếu `gcloud` chưa nhận diện trong PowerShell, dùng đường dẫn cài mặc định:
+
+   ```powershell
    & "$env:LOCALAPPDATA\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd" auth application-default login
    & "$env:LOCALAPPDATA\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd" auth application-default set-quota-project tttt-cinema-20261020
    ```
 
    Nếu đăng nhập ADC không mở callback tự động, thêm `--no-launch-browser`, mở đường dẫn Google được in ra, rồi dán mã xác minh trở lại terminal.
 
-3. Tạo `functions/.secret.local` trên máy mới bằng Notepad, gồm hai dòng `VNPAY_HASH_SECRET=...` và `ADMIN_BOOTSTRAP_CODE=...`. Dùng đúng Hash Secret Sandbox của VNPAY; đặt bootstrap code riêng nếu cần cấp quyền admin. Các giá trị này không nằm trong Git. Không chép `local.properties`, `.env.local` hoặc `.secret.local` từ máy cũ: chúng là cấu hình cục bộ, và tunnel cũ có thể đã hết hiệu lực.
+5. Tạo `functions/.secret.local` trên máy mới bằng Notepad, gồm hai dòng `VNPAY_HASH_SECRET=...` và `ADMIN_BOOTSTRAP_CODE=...`. Dùng đúng Hash Secret Sandbox của VNPAY; đặt bootstrap code riêng nếu cần cấp quyền admin. Các giá trị này không nằm trong Git. Không chép `local.properties`, `.env.local` hoặc `.secret.local` từ máy cũ: chúng là cấu hình cục bộ, và tunnel cũ có thể đã hết hiệu lực.
 
-4. Mở terminal thứ nhất tại `DOAN` và khởi động HTTPS tunnel:
+6. Mở terminal thứ nhất tại `DOAN` và khởi động HTTPS tunnel:
 
    ```powershell
    cloudflared tunnel --url http://127.0.0.1:5001
@@ -49,7 +91,7 @@ Firebase là dịch vụ cloud nên không cần chép database sang máy mới.
 
    Để nguyên terminal này chạy. Sao chép origin HTTPS được cấp, ví dụ `https://abc.trycloudflare.com`.
 
-5. Mở terminal thứ hai tại `DOAN`, thay origin bằng địa chỉ vừa nhận:
+7. Mở terminal thứ hai tại `DOAN`, thay origin bằng địa chỉ vừa nhận:
 
    ```powershell
    .\functions\start-spark-vnpay.ps1 -TunnelOrigin "https://abc.trycloudflare.com"
@@ -57,7 +99,7 @@ Firebase là dịch vụ cloud nên không cần chép database sang máy mới.
 
    Script sẽ ghi API URL cục bộ vào `local.properties` cho Android và `functions/.env.local` cho URL trả về VNPAY, rồi chạy Functions Emulator. Giữ terminal này chạy trong suốt lúc demo. Backend ghi đơn/ghế/vé vào Realtime Database thật; không bật Database Emulator hoặc Auth Emulator trong luồng này.
 
-6. Trong VNPAY Sandbox Merchant Admin, đặt IPN URL đúng origin hiện tại:
+8. Trong VNPAY Sandbox Merchant Admin, đặt IPN URL đúng origin hiện tại:
 
    ```text
    https://abc.trycloudflare.com/tttt-cinema-20261020/asia-southeast1/vnpayApi/api/payments/vnpay/ipn
@@ -65,7 +107,7 @@ Firebase là dịch vụ cloud nên không cần chép database sang máy mới.
 
    Origin trên là ví dụ: phải thay bằng URL tunnel mới. Tunnel miễn phí thường cấp URL khác khi chạy lại, vì vậy mỗi lần đổi máy/khởi động lại tunnel cần cập nhật IPN URL này.
 
-7. Trong Android Studio, chọn **File → Sync Project with Gradle Files**, rồi chạy cấu hình `app` trên emulator hoặc điện thoại. Có thể cài nhanh bằng `.\gradlew.bat installDebug` trong PowerShell. Chỉ tạo đơn thanh toán sau khi cả tunnel và Functions Emulator đã chạy.
+9. Trong Android Studio, chọn **File → Sync Project with Gradle Files**, rồi chạy cấu hình `app` trên emulator hoặc điện thoại. Có thể cài nhanh bằng `.\gradlew.bat installDebug` trong PowerShell. Chỉ tạo đơn thanh toán sau khi cả tunnel và Functions Emulator đã chạy.
 
 Máy tính chạy tunnel phải luôn thức và có Internet cho đến khi VNPAY gửi IPN và app nhận trạng thái. Nếu máy tắt, ngủ hoặc tunnel đổi URL mà chưa cập nhật IPN, callback không tới được backend. Cách này phù hợp demo Sandbox trên gói Spark; để chạy liên tục cần một endpoint backend công khai ổn định, chẳng hạn triển khai Cloud Functions sau khi project đủ điều kiện billing.
 
