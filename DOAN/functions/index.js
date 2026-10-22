@@ -617,10 +617,19 @@ async function grantStaff(email) {
 
 function sendReturnPage(response, result) {
   const valid = result.RspCode === '00';
-  const title = valid ? 'Đã nhận kết quả thanh toán' : 'Không xác nhận được giao dịch';
-  const message = valid
-    ? 'VNPAY đã trả kết quả. Hãy quay lại ứng dụng để xem trạng thái vé.'
-    : 'Chưa thể xác nhận giao dịch. Hãy quay lại ứng dụng và kiểm tra trạng thái.';
+  const title = valid ? 'Đã nhận kết quả từ VNPAY' : 'Không xác nhận được giao dịch';
+  const details = {
+    '00': 'VNPAY đã gửi kết quả. Hãy quay lại ứng dụng để kiểm tra trạng thái vé.',
+    '01': 'Không tìm thấy đơn thanh toán tương ứng trong hệ thống.',
+    '02': 'Đơn thanh toán không còn hiệu lực hoặc đã hết hạn.',
+    '04': 'Số tiền VNPAY trả về không khớp với đơn đặt vé.',
+    '97': result.Message === 'Mã website không hợp lệ'
+      ? 'Mã website VNPAY không khớp cấu hình máy chủ.'
+      : 'Chữ ký phản hồi VNPAY không hợp lệ. Hãy kiểm tra Hash Secret sandbox.',
+    '99': 'Giao dịch đã được ghi nhận; máy chủ đang hoàn tất phát hành vé. Hãy quay lại ứng dụng và kiểm tra lại.',
+  };
+  const message = details[result.RspCode] || 'Máy chủ chưa xác minh được phản hồi VNPAY. Hãy quay lại ứng dụng và kiểm tra trạng thái.';
+  console.info('VNPAY return result:', result.RspCode, result.Message);
   response.status(200).type('html').send(
     '<!doctype html><html lang="vi"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
