@@ -453,11 +453,33 @@ async function handleVnpayCallback(params) {
   }
 
   const result = await paymentRef.transaction((current) => {
-    if (!current || !hasValidOrderSignature(current) || current.paymentMethod !== 'VNPAY') return;
-    if (current.status === 'PAID' && hasValidStatusSignature(current)) return current;
-    if (current.status !== 'PENDING_VNPAY') return;
+    // The Admin SDK can invoke the transaction updater with an empty local
+    // snapshot even though the immediately preceding server read found the
+    // order. Reuse that verified snapshot as a candidate; the RTDB transaction
+    // still detects concurrent writes and reruns this function with fresh data.
+    const candidate = current || payment;
+    const orderSignatureValid = hasValidOrderSignature(candidate);
+    if (!current) console.warn('VNPAY settlement transaction using verified pre-read:', paymentId);
+    if (!candidate || !orderSignatureValid || candidate.paymentMethod !== 'VNPAY') {
+      console.warn('VNPAY settlement transaction rejected order:', JSON.stringify({
+        paymentId,
+        orderExists: Boolean(candidate),
+        orderSignatureValid,
+        paymentMethod: candidate?.paymentMethod || null,
+        status: candidate?.status || null,
+      }));
+      return;
+    }
+    if (candidate.status === 'PAID' && hasValidStatusSignature(candidate)) return candidate;
+    if (candidate.status !== 'PENDING_VNPAY') {
+      console.warn('VNPAY settlement transaction found unexpected order status:', JSON.stringify({
+        paymentId,
+        status: candidate.status,
+      }));
+      return;
+    }
     const updated = {
-      ...current,
+      ...candidate,
       status: 'PAID',
       paidAt: Date.now(),
       vnpTransactionNo: text(params.vnp_TransactionNo, 30),

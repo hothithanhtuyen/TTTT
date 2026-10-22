@@ -172,6 +172,7 @@ fun CinemaApp() {
                     CinemaApi.getOrder(orderId) { result ->
                         result.onSuccess { latest ->
                             order = latest
+                            message = ""
                             if (latest.status == "PENDING_VNPAY") {
                                 handler.postDelayed(this, 3_500)
                             }
@@ -354,7 +355,10 @@ fun CinemaApp() {
                     busy = true
                     CinemaApi.getOrder(id) { result ->
                         busy = false
-                        result.onSuccess { order = it }.onFailure { message = it.message.orEmpty() }
+                        result.onSuccess {
+                            order = it
+                            message = ""
+                        }.onFailure { message = it.message.orEmpty() }
                     }
                 },
                 onMyTickets = {
@@ -900,7 +904,7 @@ private fun OrderPage(
                     Text("Kiểm tra trạng thái", color = CinemaRed)
                 }
             }
-            if (message.isNotBlank()) Text(message, color = CinemaMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 10.dp))
+            if (!paid && message.isNotBlank()) Text(message, color = CinemaMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 10.dp))
             Text("QR được tạo từ trạng thái đơn do máy chủ xác nhận.", color = Color(0xFF686E7A), fontSize = 10.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 18.dp))
         }
     }
